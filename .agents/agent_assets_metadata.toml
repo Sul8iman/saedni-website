@@ -1,3 +1,8 @@
 uploads = []
 generated = []
-outputs = []
+
+[[outputs]]
+id = "BT1noBM79IyireyRi5K0H"
+uri = "file://saedni_migration.zip"
+type = "unspecified"
+title = "saedni_migration.zip — 4 SQL migration files"
