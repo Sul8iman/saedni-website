@@ -12,3 +12,9 @@ id = "-BEEAFniCInNpt-iUIkYu"
 uri = "file://saedni_prod_migration.zip"
 type = "unspecified"
 title = "saedni_prod_migration.zip — 005_prod_data.sql + 006_verify_prod.sql"
+
+[[outputs]]
+id = "jPyv9HlDAZlE0hEog4JTD"
+uri = "file://saedni_prod_migration_fixed.zip"
+type = "unspecified"
+title = "saedni_prod_migration_fixed.zip — 005_prod_data_fixed.sql + 006_verify_prod.sql"
