@@ -6,3 +6,9 @@ id = "BT1noBM79IyireyRi5K0H"
 uri = "file://saedni_migration.zip"
 type = "unspecified"
 title = "saedni_migration.zip — 4 SQL migration files"
+
+[[outputs]]
+id = "-BEEAFniCInNpt-iUIkYu"
+uri = "file://saedni_prod_migration.zip"
+type = "unspecified"
+title = "saedni_prod_migration.zip — 005_prod_data.sql + 006_verify_prod.sql"
