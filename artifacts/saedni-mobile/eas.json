@@ -20,7 +20,7 @@
     "production": {
       "autoIncrement": false,
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "help-me-om.replit.app"
+        "EXPO_PUBLIC_DOMAIN": "https://saedni.onrender.com"
       },
       "ios": {
         "buildConfiguration": "Release",

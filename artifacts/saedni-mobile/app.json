@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.saedni.app",
-      "buildNumber": "27",
+      "buildNumber": "28",
       "infoPlist": {
         "CFBundleDisplayName": "ساعدني",
         "NSLocationWhenInUseUsageDescription": "نحتاج موقعك لعرض الطلبات القريبة منك",
