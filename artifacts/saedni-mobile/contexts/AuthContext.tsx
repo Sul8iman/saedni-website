@@ -110,6 +110,9 @@ interface AuthContextType {
   loading: boolean;
   startupLog: StartupLog | null;
   activeRole: string | null;
+  isGuest: boolean;
+  enterGuestMode: () => void;
+  exitGuestMode: () => void;
   setSession: (user: AuthUser, token: string) => Promise<StorageResult | null>;
   setUser: (user: AuthUser) => Promise<void>;
   setActiveRole: (role: string) => Promise<void>;
@@ -121,6 +124,9 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   startupLog: null,
   activeRole: null,
+  isGuest: false,
+  enterGuestMode: () => {},
+  exitGuestMode: () => {},
   setSession: async () => null,
   setUser: async () => {},
   setActiveRole: async () => {},
@@ -134,6 +140,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [startupLog, setStartupLog] = useState<StartupLog | null>(null);
   const [activeRole, setActiveRoleState] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
+
+  const enterGuestMode = () => { setIsGuest(true); };
+  const exitGuestMode  = () => { setIsGuest(false); };
 
   useEffect(() => {
     (async () => {
@@ -302,7 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, startupLog, activeRole, setSession, setUser, setActiveRole, logout }}>
+    <AuthContext.Provider value={{ user, loading, startupLog, activeRole, isGuest, enterGuestMode, exitGuestMode, setSession, setUser, setActiveRole, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function Index() {
-  const { user, loading, activeRole, setActiveRole } = useAuth();
+  const { user, loading, activeRole, setActiveRole, isGuest } = useAuth();
   const colors = useColors();
 
   if (loading) {
@@ -19,6 +19,7 @@ export default function Index() {
     );
   }
 
+  if (isGuest) return <Redirect href="/(guest)" />;
   if (!user) return <Redirect href="/(auth)/welcome" />;
   if (user.userType === "admin") return <Redirect href="/(admin)" />;
 

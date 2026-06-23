@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/contexts/AuthContext";
 
 const EXAMPLES = [
   { emoji: "🚚", text: "أحتاج بيكب لنقل أغراض من بوشر إلى الخوير", amount: "15" },
@@ -13,7 +14,13 @@ const EXAMPLES = [
 export default function WelcomeScreen() {
   const colors = useColors();
   const router = useRouter();
+  const { enterGuestMode } = useAuth();
   const s = makeStyles(colors);
+
+  function handleGuestMode() {
+    enterGuestMode();
+    router.replace("/");
+  }
 
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
@@ -67,6 +74,15 @@ export default function WelcomeScreen() {
             activeOpacity={0.85}
           >
             <Text style={s.secondaryBtnTxt}>إنشاء حساب جديد</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={s.guestBtn}
+            onPress={handleGuestMode}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="eye-outline" size={16} color={colors.mutedForeground} />
+            <Text style={s.guestBtnTxt}>تصفح كضيف</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -133,7 +149,7 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
     amountTxt: { fontSize: 13, fontWeight: "700", color: c.primary },
     amountCur: { fontSize: 10, color: c.mutedForeground, fontWeight: "500" },
 
-    actions: { gap: 12 },
+    actions: { gap: 12, alignItems: "stretch" },
     primaryBtn: {
       backgroundColor: c.primary, borderRadius: 14,
       paddingVertical: 17, alignItems: "center",
@@ -147,4 +163,9 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
       borderWidth: 1.5, borderColor: c.border,
     },
     secondaryBtnTxt: { color: c.foreground, fontSize: 17, fontWeight: "600" },
+    guestBtn: {
+      borderRadius: 14, paddingVertical: 14, alignItems: "center",
+      flexDirection: "row", justifyContent: "center", gap: 8,
+    },
+    guestBtnTxt: { color: c.mutedForeground, fontSize: 15, fontWeight: "500" },
   });
