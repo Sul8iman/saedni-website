@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "N0LLLMnxefkDQXjo654oG"
+uri = "file://attached_assets/saedni-feature-graphic.png"
+type = "image"
+title = "saedni google play feature graphic"
 
 [[outputs]]
 id = "BT1noBM79IyireyRi5K0H"
@@ -18,3 +23,9 @@ id = "jPyv9HlDAZlE0hEog4JTD"
 uri = "file://saedni_prod_migration_fixed.zip"
 type = "unspecified"
 title = "saedni_prod_migration_fixed.zip — 005_prod_data_fixed.sql + 006_verify_prod.sql"
+
+[[outputs]]
+id = "PC5xCS4anQrAxgXrGCYBc"
+uri = "file://attached_assets/saedni-feature-graphic.png"
+type = "image"
+title = "ساعدني — Google Play Feature Graphic (16:9)"
