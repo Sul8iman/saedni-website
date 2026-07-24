@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAdminPushRegistration } from "@/hooks/usePushNotifications";
 import { CATEGORIES, STATUS_INFO } from "@/constants/categories";
 
-const BASE = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
+const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? "saedni.onrender.com"}`;
 
 interface Stats {
   totalUsers: number; totalHelpers: number; totalCustomers: number;

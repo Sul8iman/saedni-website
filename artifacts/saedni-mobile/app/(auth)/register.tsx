@@ -112,7 +112,11 @@ export default function RegisterScreen() {
           </View>
           <Text style={s.appName}>{step === "form" ? "حساب جديد" : "تفعيل الحساب"}</Text>
           <Text style={s.tagline}>
-            {step === "form" ? "انضم إلى ساعدني اليوم" : "أدخل رمز التحقق من الإدارة"}
+            {step === "form"
+            ? "انضم إلى ساعدني اليوم"
+            : userType === "customer"
+              ? "أدخل رمز التحقق من واتساب"
+              : "تواصل مع الإدارة للتفعيل"}
           </Text>
         </View>
 
@@ -214,16 +218,27 @@ export default function RegisterScreen() {
 
           {step === "otp" && (
             <>
-              <View style={s.successBox}>
-                <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                <Text style={s.successTxt}>
-                  تم إنشاء حسابك. يرجى التواصل مع الإدارة للحصول على رمز التحقق
-                </Text>
-              </View>
-              <TouchableOpacity style={s.waBtn} onPress={openWhatsApp} activeOpacity={0.85}>
-                <Ionicons name="logo-whatsapp" size={20} color="#fff" />
-                <Text style={s.waBtnTxt}>تواصل مع الإدارة</Text>
-              </TouchableOpacity>
+              {userType === "customer" ? (
+                // Customer: OTP sent automatically via WhatsApp
+                <View style={s.waInfoBox}>
+                  <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                  <Text style={s.waInfoTxt}>أدخل رمز التحقق المرسل إلى رقم واتساب المسجل.</Text>
+                </View>
+              ) : (
+                // Helper: manual activation via admin
+                <>
+                  <View style={s.successBox}>
+                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                    <Text style={s.successTxt}>
+                      يرجى التواصل مع الإدارة للحصول على رمز التفعيل.
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={s.waBtn} onPress={openWhatsApp} activeOpacity={0.85}>
+                    <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+                    <Text style={s.waBtnTxt}>تواصل مع الإدارة</Text>
+                  </TouchableOpacity>
+                </>
+              )}
               <Text style={s.fieldLabel}>رمز التحقق</Text>
               <TextInput
                 style={[s.input, s.otpInput]}
@@ -333,6 +348,13 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
       gap: 10, marginBottom: 16,
     },
     waBtnTxt: { color: "#fff", fontSize: 14, fontWeight: "700" },
+    waInfoBox: {
+      flexDirection: "row-reverse", alignItems: "center", gap: 8,
+      backgroundColor: "#F0FDF4", borderRadius: 10, padding: 12,
+      borderWidth: 1, borderColor: "#BBF7D0",
+      marginBottom: 16,
+    },
+    waInfoTxt: { color: "#166534", fontSize: 13, textAlign: "right", flex: 1, lineHeight: 18 },
     successBox: {
       backgroundColor: c.secondary, borderRadius: 12, padding: 14,
       flexDirection: "row-reverse", alignItems: "flex-start", gap: 10, marginBottom: 16,

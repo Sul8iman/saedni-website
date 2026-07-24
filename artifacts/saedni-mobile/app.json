@@ -3,7 +3,7 @@
     "name": "ساعدني",
     "slug": "saedni",
     "owner": "sul8iman",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "saedni",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.saedni.app",
-      "buildNumber": "30",
+      "buildNumber": "32",
       "infoPlist": {
         "CFBundleDisplayName": "ساعدني",
         "NSLocationWhenInUseUsageDescription": "نحتاج موقعك لعرض الطلبات القريبة منك",

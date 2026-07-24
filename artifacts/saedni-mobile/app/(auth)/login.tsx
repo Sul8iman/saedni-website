@@ -252,12 +252,12 @@ export default function LoginScreen() {
                 // Customer: OTP sent via WhatsApp automatically
                 <View style={s.waInfoBox}>
                   <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
-                  <Text style={s.waInfoTxt}>تم إرسال رمز التحقق عبر واتساب إلى رقمك</Text>
+                  <Text style={s.waInfoTxt}>أدخل رمز التحقق المرسل إلى رقم واتساب المسجل.</Text>
                 </View>
               ) : (
                 // Helper / manual flow: contact admin
                 <>
-                  <Text style={s.adminHint}>تواصل مع الإدارة للحصول على رمز التحقق</Text>
+                  <Text style={s.adminHint}>يرجى التواصل مع الإدارة للحصول على رمز التفعيل.</Text>
                   <TouchableOpacity style={s.waBtn} onPress={openWhatsAppAdmin} activeOpacity={0.85}>
                     <Ionicons name="logo-whatsapp" size={20} color="#fff" />
                     <Text style={s.waBtnTxt}>تواصل مع الإدارة</Text>

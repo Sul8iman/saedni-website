@@ -1,0 +1,103 @@
+Update the Saedni mobile app OTP flow, then create a new iOS production build.
+
+Repository:
+Sul8iman/saedni
+
+Branch:
+main
+
+Required changes:
+
+1. Customer OTP message
+For the requester/customer account only, replace any message such as:
+"تواصل مع الإدارة للحصول على الرمز"
+
+with exactly:
+"أدخل رمز التحقق المرسل إلى رقم واتساب المسجل."
+
+2. Helper activation message
+For the helper account, keep the manual activation flow and show:
+"يرجى التواصل مع الإدارة للحصول على رمز التفعيل."
+
+Do not send automatic WhatsApp OTP to helpers.
+
+3. Change all customer OTP inputs from 4 digits to exactly 6 digits.
+
+Search the entire mobile app for all old 4-digit logic, including:
+- maxLength={4}
+- otp.length === 4
+- otp.length !== 4
+- slice(0, 4)
+- four OTP boxes
+- four-digit placeholders
+- any text mentioning a 4-digit code
+
+Replace them with 6-digit behavior.
+
+4. Check these files specifically:
+- artifacts/saedni-mobile/app/(auth)/login.tsx
+- artifacts/saedni-mobile/app/(auth)/register.tsx
+
+Also search all files inside:
+- artifacts/saedni-mobile
+
+5. OTP field requirements:
+- Accept numbers only
+- Maximum length: 6
+- Require exactly 6 digits before verification
+- Display six positions if separate OTP boxes are used
+- Keep the backend OTP at 6 digits
+- Keep OTP validity at 10 minutes
+
+6. Confirm the customer flow:
+- Customer registers or logs in
+- A 6-digit OTP is sent automatically through WhatsApp
+- The app displays:
+  "أدخل رمز التحقق المرسل إلى رقم واتساب المسجل."
+- The customer can enter all 6 digits and verify successfully
+
+7. Confirm the helper flow:
+- Helper sees:
+  "يرجى التواصل مع الإدارة للحصول على رمز التفعيل."
+- Helper activation remains manual
+
+8. Before building:
+- Run a full search to confirm no active customer OTP screen still uses 4 digits
+- Run TypeScript/type checks
+- Fix any errors
+- Confirm the app uses the production API URL:
+  https://saedni.onrender.com
+
+9. Commit and push all changes to:
+Sul8iman/saedni
+branch: main
+
+Use a clear commit message such as:
+"Update OTP UI to 6 digits and clarify WhatsApp verification"
+
+Report the new commit SHA.
+
+10. After the push succeeds, create a NEW iOS production build using the latest commit:
+
+cd artifacts/saedni-mobile
+npm install
+eas whoami
+eas build --platform ios --profile production
+
+Do not reuse the previous build.
+
+11. After the build completes successfully:
+- Report the EAS build number
+- Report the app version
+- Report the build URL
+- Confirm that the build was created from the new commit SHA
+- Submit it to App Store Connect/TestFlight using:
+
+eas submit --platform ios --latest
+
+12. Do not modify:
+- the saedni-website repository
+- the privacy-policy website
+- the backend OTP length
+- the 10-minute OTP expiration
+- the helper manual activation process
