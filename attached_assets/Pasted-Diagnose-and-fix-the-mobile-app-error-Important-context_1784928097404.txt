@@ -1,0 +1,67 @@
+Diagnose and fix the mobile app error: "تعذر الاتصال بالخادم".
+
+Important context:
+- WhatsApp Cloud API test succeeded.
+- The OTP was delivered successfully.
+- Production backend URL is:
+  https://saedni.onrender.com
+- The mobile app must communicate with the Render production backend, not localhost or the Replit development server.
+
+Tasks:
+
+1. Check the mobile app API base URL and confirm it is exactly:
+   https://saedni.onrender.com
+
+2. Search the entire mobile app for:
+   localhost
+   127.0.0.1
+   replit.dev
+   replit.app
+   EXPO_PUBLIC_API_URL
+   API_BASE_URL
+   BASE_URL
+
+3. Replace any development backend URL with the Render production URL, using an environment variable where possible:
+   EXPO_PUBLIC_API_URL=https://saedni.onrender.com
+
+4. Test the Render backend health endpoint from the terminal.
+
+5. Test the exact customer OTP request endpoint against Render using the same JSON body that the mobile app sends.
+
+6. Confirm whether the WhatsApp integration code has actually been deployed to Render.
+   Compare the local commit with the GitHub branch connected to Render.
+
+7. If the WhatsApp code has not reached GitHub or Render:
+   - do not claim deployment succeeded;
+   - provide the exact git commands required to push it;
+   - identify the repository URL and current branch.
+
+8. Inspect the Render-compatible server configuration:
+   - server must listen on process.env.PORT
+   - server must listen on 0.0.0.0
+   - production database variables must exist
+   - CORS must allow requests from the mobile app
+   - HTTPS must be used
+
+9. Improve the mobile app error handling so it distinguishes between:
+   - no internet connection
+   - server unreachable
+   - request timeout
+   - HTTP 4xx response
+   - HTTP 5xx response
+   - WhatsApp OTP delivery failure
+
+10. Log the endpoint URL, HTTP status, and safe error response during testing.
+    Never log the OTP, access token, passwords, or other secrets.
+
+11. Do not modify the helper registration flow.
+
+12. Do not create a new iOS or Android build yet.
+
+At the end, report:
+- the API URL currently used by the app;
+- whether Render is reachable;
+- the OTP endpoint status and response;
+- whether the latest WhatsApp code is deployed on Render;
+- the exact root cause of "تعذر الاتصال بالخادم";
+- the exact fix applied.

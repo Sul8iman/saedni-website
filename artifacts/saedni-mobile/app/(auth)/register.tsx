@@ -14,7 +14,10 @@ import { useAuth, type AuthUser } from "@/contexts/AuthContext";
 type Step = "form" | "otp";
 type UserType = "customer" | "helper";
 
-const BASE = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
+// Production backend — EXPO_PUBLIC_DOMAIN is baked in at EAS build time;
+// fall back to Render so dev/web builds also work.
+const DOMAIN = process.env.EXPO_PUBLIC_DOMAIN ?? "saedni.onrender.com";
+const BASE = `https://${DOMAIN}`;
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -52,22 +55,36 @@ export default function RegisterScreen() {
   }
 
   async function handleVerify() {
-    if (otp.length < 4) return;
+    if (otp.length < 6) return;
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const res = await fetch(`${BASE}/api/auth/verify-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ phone: phone.trim(), otp }),
-      });
-      const data = await res.json();
-      if (!res.ok) { Alert.alert("خطأ", data.error || "رمز التحقق غير صحيح"); return; }
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15_000);
+      let res: Response;
+      try {
+        res = await fetch(`${BASE}/api/auth/verify-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ phone: phone.trim(), otp }),
+          signal: controller.signal,
+        });
+      } finally { clearTimeout(timer); }
+      let data: Record<string, unknown> = {};
+      try { data = await res.json(); } catch {}
+      if (!res.ok) {
+        const msg = typeof data.error === "string" ? data.error : res.status >= 500 ? "خطأ في الخادم، يرجى المحاولة لاحقاً" : "رمز التحقق غير صحيح";
+        Alert.alert("خطأ", msg);
+        return;
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await setSession(data.user as AuthUser, data.token as string);
       router.replace("/");
-    } catch { Alert.alert("خطأ", "تعذر الاتصال بالخادم"); }
+    } catch (err: unknown) {
+      const isTimeout = err instanceof Error && err.name === "AbortError";
+      Alert.alert("خطأ في الاتصال", isTimeout ? "انتهت مهلة الاتصال، يرجى المحاولة مجدداً" : "تعذر الاتصال بالخادم، يرجى التحقق من اتصالك بالإنترنت");
+    }
     finally { setLoading(false); }
   }
 
@@ -211,18 +228,18 @@ export default function RegisterScreen() {
               <TextInput
                 style={[s.input, s.otpInput]}
                 value={otp}
-                onChangeText={t => setOtp(t.replace(/\D/g, "").slice(0, 4))}
-                placeholder="- - - -"
+                onChangeText={t => setOtp(t.replace(/\D/g, "").slice(0, 6))}
+                placeholder="- - - - - -"
                 keyboardType="number-pad"
-                maxLength={4}
+                maxLength={6}
                 textAlign="center"
                 placeholderTextColor={colors.mutedForeground}
                 autoFocus
               />
               <TouchableOpacity
-                style={[s.primaryBtn, otp.length < 4 && s.btnDisabled]}
+                style={[s.primaryBtn, otp.length < 6 && s.btnDisabled]}
                 onPress={handleVerify}
-                disabled={loading || otp.length < 4}
+                disabled={loading || otp.length < 6}
                 activeOpacity={0.85}
               >
                 {loading

@@ -237,6 +237,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
         ? "تم إرسال رمز التحقق عبر واتساب"
         : "تم إرسال رمز التحقق عبر واتساب، يرجى إدخاله لتفعيل حسابك",
       isVerified: user.isVerified,
+      otpDelivery: "whatsapp",
     });
   } else {
     // Helper: keep existing admin-mediated flow
@@ -247,6 +248,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
         ? "تواصل مع الإدارة للحصول على رمز التفعيل"
         : "حسابك غير مفعل. يرجى إدخال رمز التحقق من الإدارة",
       isVerified: user.isVerified,
+      otpDelivery: "admin",
     });
   }
 });

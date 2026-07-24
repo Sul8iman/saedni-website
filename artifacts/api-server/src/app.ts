@@ -100,4 +100,20 @@ app.use((req, _res, next) => {
 
 app.use("/api", router);
 
+// Global JSON error handler — must be last; converts all unhandled Express errors
+// to JSON so mobile clients can parse the message (no more HTML 500 pages).
+app.use(
+  (
+    err: unknown,
+    _req: import("express").Request,
+    res: import("express").Response,
+    _next: import("express").NextFunction,
+  ) => {
+    const message =
+      err instanceof Error ? err.message : "خطأ داخلي في الخادم";
+    logger.error({ err }, "Unhandled route error");
+    res.status(500).json({ error: "خطأ داخلي في الخادم", detail: message });
+  },
+);
+
 export default app;

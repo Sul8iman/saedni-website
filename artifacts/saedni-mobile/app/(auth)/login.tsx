@@ -13,13 +13,40 @@ import { useAuth, type AuthUser } from "@/contexts/AuthContext";
 
 type Step = "phone" | "otp" | "pin";
 
-const BASE = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
+// Production backend — EXPO_PUBLIC_DOMAIN is baked in at EAS build time;
+// fall back to Render so dev/web builds also work.
+const DOMAIN = process.env.EXPO_PUBLIC_DOMAIN ?? "saedni.onrender.com";
+const BASE = `https://${DOMAIN}`;
 
-async function safeFetch(url: string, init: RequestInit) {
-  const res = await fetch(url, init);
-  let data: Record<string, unknown> = {};
-  try { data = await res.json(); } catch { /* non-JSON body */ }
-  return { res, data };
+const FETCH_TIMEOUT_MS = 15_000;
+
+type ApiResult =
+  | { ok: true; data: Record<string, unknown> }
+  | { ok: false; kind: "network" | "timeout" | "client" | "server"; status?: number; message: string };
+
+async function safeApiFetch(url: string, init: RequestInit): Promise<ApiResult> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    clearTimeout(timer);
+    let data: Record<string, unknown> = {};
+    try { data = await res.json(); } catch { /* non-JSON body — keep data empty */ }
+
+    if (res.ok) return { ok: true, data };
+
+    const msg = typeof data.error === "string" ? data.error : "";
+    if (res.status >= 500) {
+      return { ok: false, kind: "server", status: res.status, message: msg || "خطأ في الخادم، يرجى المحاولة لاحقاً" };
+    }
+    return { ok: false, kind: "client", status: res.status, message: msg || "حدث خطأ، يرجى المحاولة مجدداً" };
+  } catch (err: unknown) {
+    clearTimeout(timer);
+    if (err instanceof Error && err.name === "AbortError") {
+      return { ok: false, kind: "timeout", message: "انتهت مهلة الاتصال، يرجى المحاولة مجدداً" };
+    }
+    return { ok: false, kind: "network", message: "تعذر الاتصال بالخادم، يرجى التحقق من اتصالك بالإنترنت" };
+  }
 }
 
 export default function LoginScreen() {
@@ -32,97 +59,115 @@ export default function LoginScreen() {
   const [otp, setOtp] = useState("");
   const [pin, setPin] = useState("");
   const [isUnverified, setIsUnverified] = useState(false);
+  // "whatsapp" = customer (OTP sent via WhatsApp), "admin" = helper/manual flow
+  const [otpDelivery, setOtpDelivery] = useState<"whatsapp" | "admin">("admin");
   const [loading, setLoading] = useState(false);
 
   async function handlePhoneSubmit() {
     if (!phone.trim()) return;
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const { res, data } = await safeFetch(`${BASE}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ phone: phone.trim() }),
-      });
-      if (!res.ok) {
-        Alert.alert("خطأ", (data.error as string) || "رقم غير موجود");
-        return;
+
+    const result = await safeApiFetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ phone: phone.trim() }),
+    });
+
+    setLoading(false);
+
+    if (!result.ok) {
+      if (result.kind === "network" || result.kind === "timeout") {
+        Alert.alert("خطأ في الاتصال", result.message);
+      } else {
+        Alert.alert("خطأ", result.message);
       }
-      if (data.isAdmin) { setStep("pin"); }
-      else { setIsUnverified(data.isVerified === false); setStep("otp"); }
-    } catch {
-      Alert.alert("خطأ في الاتصال", "تعذر الاتصال بالخادم، يرجى المحاولة مجدداً");
-    } finally {
-      setLoading(false);
+      return;
+    }
+
+    const { data } = result;
+    if (data.isAdmin) {
+      setStep("pin");
+    } else {
+      setIsUnverified(data.isVerified === false);
+      // Server sends otpDelivery: "whatsapp" | "admin"; fall back to "admin" for old server
+      setOtpDelivery((data.otpDelivery as "whatsapp" | "admin") ?? "admin");
+      setStep("otp");
     }
   }
 
   async function handleOtpSubmit() {
-    if (otp.length < 4) return;
+    if (otp.length < 6) return;
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const { res, data } = await safeFetch(`${BASE}/api/auth/verify-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ phone: phone.trim(), otp }),
-      });
-      if (!res.ok) {
-        Alert.alert("خطأ", (data.error as string) || "رمز التحقق غير صحيح");
-        return;
+
+    const result = await safeApiFetch(`${BASE}/api/auth/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ phone: phone.trim(), otp }),
+    });
+
+    setLoading(false);
+
+    if (!result.ok) {
+      if (result.kind === "network" || result.kind === "timeout") {
+        Alert.alert("خطأ في الاتصال", result.message);
+      } else {
+        Alert.alert("رمز التحقق", result.message);
       }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const token = data.token as string | undefined;
-      const user  = data.user  as AuthUser | undefined;
-      if (!token || !user) {
-        Alert.alert("خطأ", "حدث خطأ غير متوقع، يرجى المحاولة مجدداً");
-        return;
-      }
-      const saveResult = await setSession(user, token);
-      if (!saveResult) return;
-      router.replace("/");
-    } catch {
-      Alert.alert("خطأ في الاتصال", "تعذر الاتصال بالخادم، يرجى المحاولة مجدداً");
-    } finally {
-      setLoading(false);
+      return;
     }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const token = result.data.token as string | undefined;
+    const user  = result.data.user  as AuthUser | undefined;
+    if (!token || !user) {
+      Alert.alert("خطأ", "حدث خطأ غير متوقع، يرجى المحاولة مجدداً");
+      return;
+    }
+    const saveResult = await setSession(user, token);
+    if (!saveResult) return;
+    router.replace("/");
   }
 
   async function handlePinSubmit() {
     if (!pin.trim()) return;
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const { res, data } = await safeFetch(`${BASE}/api/auth/admin-login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ phone: phone.trim(), pin }),
-      });
-      if (!res.ok) {
-        Alert.alert("خطأ", (data.error as string) || "رمز PIN غير صحيح");
-        return;
+
+    const result = await safeApiFetch(`${BASE}/api/auth/admin-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ phone: phone.trim(), pin }),
+    });
+
+    setLoading(false);
+
+    if (!result.ok) {
+      if (result.kind === "network" || result.kind === "timeout") {
+        Alert.alert("خطأ في الاتصال", result.message);
+      } else {
+        Alert.alert("خطأ", result.message);
       }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const token = data.token as string | undefined;
-      const user  = data.user  as AuthUser | undefined;
-      if (!token || !user) {
-        Alert.alert("خطأ", "حدث خطأ غير متوقع، يرجى المحاولة مجدداً");
-        return;
-      }
-      const saveResult = await setSession(user, token);
-      if (!saveResult) return;
-      router.replace("/");
-    } catch {
-      Alert.alert("خطأ في الاتصال", "تعذر الاتصال بالخادم، يرجى المحاولة مجدداً");
-    } finally {
-      setLoading(false);
+      return;
     }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const token = result.data.token as string | undefined;
+    const user  = result.data.user  as AuthUser | undefined;
+    if (!token || !user) {
+      Alert.alert("خطأ", "حدث خطأ غير متوقع، يرجى المحاولة مجدداً");
+      return;
+    }
+    const saveResult = await setSession(user, token);
+    if (!saveResult) return;
+    router.replace("/");
   }
 
-  function openWhatsApp() {
+  function openWhatsAppAdmin() {
     Linking.openURL(
       `https://wa.me/96892771450?text=${encodeURIComponent("مرحباً، أحتاج رمز التحقق للدخول إلى تطبيق ساعدني")}`
     );
@@ -150,6 +195,8 @@ export default function LoginScreen() {
 
         {/* Card */}
         <View style={s.card}>
+
+          {/* ── Phone step ── */}
           {step === "phone" && (
             <>
               <Text style={s.cardTitle}>تسجيل الدخول</Text>
@@ -185,37 +232,54 @@ export default function LoginScreen() {
             </>
           )}
 
+          {/* ── OTP step ── */}
           {step === "otp" && (
             <>
               <Text style={s.cardTitle}>رمز التحقق</Text>
+
               {isUnverified && (
                 <View style={s.warnBox}>
                   <Ionicons name="warning-outline" size={16} color="#92400E" />
-                  <Text style={s.warnTxt}>حسابك غير مفعّل — أدخل رمز التحقق من الإدارة</Text>
+                  <Text style={s.warnTxt}>حسابك غير مفعّل — أدخل رمز التحقق لتفعيله</Text>
                 </View>
               )}
+
               <Text style={s.subLabel}>
                 الرقم: <Text style={s.subLabelBold}>{phone}</Text>
               </Text>
-              <Text style={s.adminHint}>رمز التحقق متوفر لدى الإدارة</Text>
-              <TouchableOpacity style={s.waBtn} onPress={openWhatsApp} activeOpacity={0.85}>
-                <Ionicons name="logo-whatsapp" size={20} color="#fff" />
-                <Text style={s.waBtnTxt}>تواصل مع الإدارة</Text>
-              </TouchableOpacity>
+
+              {otpDelivery === "whatsapp" ? (
+                // Customer: OTP sent via WhatsApp automatically
+                <View style={s.waInfoBox}>
+                  <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                  <Text style={s.waInfoTxt}>تم إرسال رمز التحقق عبر واتساب إلى رقمك</Text>
+                </View>
+              ) : (
+                // Helper / manual flow: contact admin
+                <>
+                  <Text style={s.adminHint}>تواصل مع الإدارة للحصول على رمز التحقق</Text>
+                  <TouchableOpacity style={s.waBtn} onPress={openWhatsAppAdmin} activeOpacity={0.85}>
+                    <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+                    <Text style={s.waBtnTxt}>تواصل مع الإدارة</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
               <TextInput
                 style={[s.input, s.otpInput]}
                 value={otp}
-                onChangeText={t => setOtp(t.replace(/\D/g, "").slice(0, 4))}
-                placeholder="- - - -"
+                onChangeText={t => setOtp(t.replace(/\D/g, "").slice(0, 6))}
+                placeholder="- - - - - -"
                 keyboardType="number-pad"
-                maxLength={4}
+                maxLength={6}
                 textAlign="center"
                 placeholderTextColor={colors.mutedForeground}
+                autoFocus
               />
               <TouchableOpacity
-                style={[s.primaryBtn, otp.length < 4 && s.btnDisabled]}
+                style={[s.primaryBtn, otp.length < 6 && s.btnDisabled]}
                 onPress={handleOtpSubmit}
-                disabled={loading || otp.length < 4}
+                disabled={loading || otp.length < 6}
                 activeOpacity={0.85}
               >
                 {loading
@@ -228,6 +292,7 @@ export default function LoginScreen() {
             </>
           )}
 
+          {/* ── Admin PIN step ── */}
           {step === "pin" && (
             <>
               <View style={s.adminBadge}>
@@ -297,7 +362,7 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
       fontSize: 14, fontWeight: "600", color: c.foreground,
       textAlign: "right", marginBottom: 8,
     },
-    subLabel: { fontSize: 13, color: c.mutedForeground, textAlign: "right", marginBottom: 16 },
+    subLabel: { fontSize: 13, color: c.mutedForeground, textAlign: "right", marginBottom: 12 },
     subLabelBold: { fontWeight: "700", color: c.foreground },
     input: {
       borderWidth: 1.5, borderColor: c.border, borderRadius: 12,
@@ -306,7 +371,7 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
       textAlign: "right", marginBottom: 16,
     },
     otpInput: {
-      textAlign: "center", fontSize: 28, letterSpacing: 10, fontWeight: "800",
+      textAlign: "center", fontSize: 24, letterSpacing: 8, fontWeight: "800",
       paddingVertical: 18,
     },
     primaryBtn: {
@@ -328,6 +393,13 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
       gap: 10, marginBottom: 16,
     },
     waBtnTxt: { color: "#fff", fontSize: 14, fontWeight: "700" },
+    waInfoBox: {
+      flexDirection: "row-reverse", alignItems: "center", gap: 8,
+      backgroundColor: "#F0FDF4", borderRadius: 10, padding: 12,
+      borderWidth: 1, borderColor: "#BBF7D0",
+      marginBottom: 16,
+    },
+    waInfoTxt: { color: "#166534", fontSize: 13, textAlign: "right", flex: 1, lineHeight: 18 },
     warnBox: {
       backgroundColor: "#FEF3C7", borderRadius: 10, padding: 12,
       flexDirection: "row-reverse", alignItems: "flex-start", gap: 8, marginBottom: 16,
