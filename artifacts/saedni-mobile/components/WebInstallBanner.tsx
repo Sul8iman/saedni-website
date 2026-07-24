@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1AA87D',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
     zIndex: 9999,
@@ -89,10 +89,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
     textAlign: 'right',
-    marginLeft: 12,
+    marginEnd: 12,
   },
   buttons: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     gap: 8,
   },
   installBtn: {

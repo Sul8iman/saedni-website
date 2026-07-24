@@ -305,7 +305,7 @@ const makeStyles = (c: ReturnType<typeof useColors>, bottomInset: number) =>
     chipOn: {
       backgroundColor: c.primary, borderColor: c.primary,
     },
-    chipCheck: { marginLeft: 4 },
+    chipCheck: { marginStart: 4 },
     chipTxt: { fontSize: 13, color: c.foreground, fontWeight: "600" },
     chipTxtOn: { color: c.primaryForeground },
     saveBtn: {

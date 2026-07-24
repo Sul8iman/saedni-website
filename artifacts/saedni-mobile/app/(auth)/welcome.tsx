@@ -165,7 +165,7 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
     secondaryBtnTxt: { color: c.foreground, fontSize: 17, fontWeight: "600" },
     guestBtn: {
       borderRadius: 14, paddingVertical: 14, alignItems: "center",
-      flexDirection: "row", justifyContent: "center", gap: 8,
+      flexDirection: "row-reverse", justifyContent: "center", gap: 8,
     },
     guestBtnTxt: { color: c.mutedForeground, fontSize: 15, fontWeight: "500" },
   });

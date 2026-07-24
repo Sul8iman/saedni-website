@@ -121,7 +121,7 @@ const makeStyles = (c: ReturnType<typeof useColors>, bottomInset: number) =>
     infoKey: { fontSize: 14, color: c.mutedForeground, fontWeight: "500" },
     infoVal: { fontSize: 15, fontWeight: "600", color: c.foreground },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginHorizontal: 18 },
-    statusDot: { width: 8, height: 8, borderRadius: 4, marginLeft: 6 },
+    statusDot: { width: 8, height: 8, borderRadius: 4, marginStart: 6 },
     logoutBtn: {
       width: "100%", flexDirection: "row-reverse", alignItems: "center", gap: 12,
       backgroundColor: "#FEF2F2", borderRadius: 14, paddingVertical: 16, paddingHorizontal: 20,

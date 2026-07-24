@@ -298,7 +298,7 @@ const makeStyles = (c: ReturnType<typeof useColors>, bottomInset: number) =>
       paddingHorizontal: 8, paddingVertical: 2,
     },
     countTxt: { fontSize: 12, fontWeight: "700", color: c.primary },
-    headerActions: { flexDirection: "row", gap: 8 },
+    headerActions: { flexDirection: "row-reverse", gap: 8 },
     loginBtn: {
       backgroundColor: c.primary, borderRadius: 10,
       paddingHorizontal: 14, paddingVertical: 8,

@@ -116,7 +116,7 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
     roleTitle: { fontSize: 18, fontWeight: "800", color: c.foreground, textAlign: "right", marginBottom: 4 },
     roleHint: { fontSize: 13, color: c.mutedForeground, textAlign: "right" },
     roleArrow: {
-      position: "absolute", left: 20, top: "50%",
+      position: "absolute", start: 20, top: "50%",
       width: 32, height: 32, borderRadius: 16,
       backgroundColor: c.muted, alignItems: "center", justifyContent: "center",
     },

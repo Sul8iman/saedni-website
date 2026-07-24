@@ -22,12 +22,14 @@
         "CFBundleDisplayName": "ساعدني",
         "NSLocationWhenInUseUsageDescription": "نحتاج موقعك لعرض الطلبات القريبة منك",
         "NSCameraUsageDescription": "نحتاج الكاميرا لرفع صور للطلبات",
-        "NSPhotoLibraryUsageDescription": "نحتاج مكتبة الصور لرفع صور للطلبات"
+        "NSPhotoLibraryUsageDescription": "نحتاج مكتبة الصور لرفع صور للطلبات",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.saedni.app",
-      "versionCode": 3,
+      "versionCode": 4,
+      "supportsRtl": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#1AA87D"
