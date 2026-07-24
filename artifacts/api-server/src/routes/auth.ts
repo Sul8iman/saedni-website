@@ -5,6 +5,7 @@ import { db, usersTable, adminNotificationsTable } from "@workspace/db";
 import { RegisterBody, LoginBody, VerifyOtpBody, AdminLoginBody } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 import { sendAdminOtpPush } from "../lib/push";
+import { sendWhatsAppOtp } from "../lib/whatsapp";
 
 const router: IRouter = Router();
 
@@ -13,8 +14,13 @@ const OTP_EXPIRY_MS = 10 * 60 * 1000;
 const ADMIN_PHONE = process.env.ADMIN_PHONE ?? "98584898";
 const ADMIN_PIN   = process.env.ADMIN_PIN   ?? "2724";
 
-function generate4DigitOtp(): string {
-  return Math.floor(1000 + Math.random() * 9000).toString();
+function generate6DigitOtp(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function maskPhone(phone: string): string {
+  if (phone.length <= 6) return "***";
+  return phone.slice(0, 3) + "****" + phone.slice(-3);
 }
 
 function parseRoles(rolesJson: string | null, userType: string): string[] {
@@ -59,6 +65,41 @@ async function createOtpNotification(opts: {
   }
 }
 
+async function createWhatsAppFailureNotification(opts: {
+  userId?: number;
+  userName?: string;
+  phone: string;
+  userType?: string;
+  error?: string;
+}): Promise<void> {
+  try {
+    await db.insert(adminNotificationsTable).values({
+      type: "otp_request",
+      title: "فشل إرسال رمز التحقق عبر واتساب",
+      userId: opts.userId ?? null,
+      userName: opts.userName ?? null,
+      phone: opts.phone,
+      userType: opts.userType ?? null,
+      isRead: false,
+    });
+    logger.info(
+      { maskedPhone: maskPhone(opts.phone), userType: opts.userType },
+      "whatsapp: failure notification created for admin",
+    );
+  } catch (err) {
+    logger.error({ err }, "Failed to create WhatsApp failure notification");
+  }
+}
+
+/**
+ * Determines whether to send a WhatsApp OTP for this user type.
+ * Customers (طالب المساعدة) → WhatsApp OTP.
+ * Helpers (المساعد) and admins → manual / admin flow.
+ */
+function shouldSendWhatsApp(userType: string): boolean {
+  return userType === "customer";
+}
+
 // POST /auth/register
 router.post("/auth/register", async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
@@ -79,26 +120,48 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
     // Add the new role to the existing user (dual-role registration)
     const updatedRoles = [...existingRoles, userType];
-    const otp = generate4DigitOtp();
+    const otp = generate6DigitOtp();
 
     await db.update(usersTable)
       .set({ roles: JSON.stringify(updatedRoles), otpCode: otp, otpCreatedAt: new Date() })
       .where(eq(usersTable.id, existing.id));
 
-    req.log.info({ userId: existing.id, newRole: userType, roles: updatedRoles }, "Dual role added");
-    const notifId = await createOtpNotification({ userId: existing.id, userName: existing.name, phone, userType });
-    if (notifId != null) void sendAdminOtpPush(notifId, existing.id, phone, new Date().toISOString());
+    req.log.info(
+      { userId: existing.id, newRole: userType, maskedPhone: maskPhone(phone) },
+      "Dual role added",
+    );
 
-    res.status(201).json({
-      message: "تم إضافة الدور الجديد لحسابك. يرجى التواصل مع الإدارة للحصول على رمز التحقق",
-      otp,
-      isVerified: existing.isVerified,
-      roleAdded: true,
-    });
+    if (shouldSendWhatsApp(userType)) {
+      // Customer: send WhatsApp OTP, no admin push needed
+      const result = await sendWhatsAppOtp(phone, otp, userType);
+      if (!result.success) {
+        await createWhatsAppFailureNotification({
+          userId: existing.id,
+          userName: existing.name,
+          phone,
+          userType,
+          error: result.error,
+        });
+      }
+      res.status(201).json({
+        message: "تم إضافة دور العميل لحسابك. سيتم إرسال رمز التحقق عبر واتساب",
+        isVerified: existing.isVerified,
+        roleAdded: true,
+      });
+    } else {
+      // Helper/other: admin flow
+      const notifId = await createOtpNotification({ userId: existing.id, userName: existing.name, phone, userType });
+      if (notifId != null) void sendAdminOtpPush(notifId, existing.id, phone, new Date().toISOString());
+      res.status(201).json({
+        message: "تم إضافة الدور الجديد لحسابك. يرجى التواصل مع الإدارة للحصول على رمز التحقق",
+        isVerified: existing.isVerified,
+        roleAdded: true,
+      });
+    }
     return;
   }
 
-  const otp = generate4DigitOtp();
+  const otp = generate6DigitOtp();
 
   const [user] = await db
     .insert(usersTable)
@@ -109,15 +172,30 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     })
     .returning();
 
-  req.log.info({ userId: user.id, userType }, "User registered (unverified)");
-  const notifId = await createOtpNotification({ userId: user.id, userName: name, phone, userType });
-  if (notifId != null) void sendAdminOtpPush(notifId, user.id, phone, new Date().toISOString());
+  req.log.info(
+    { userId: user.id, userType, maskedPhone: maskPhone(phone) },
+    "User registered (unverified)",
+  );
 
-  res.status(201).json({
-    message: "تم إنشاء الحساب. يرجى التواصل مع الإدارة للحصول على رمز التحقق",
-    otp,
-    isVerified: false,
-  });
+  if (shouldSendWhatsApp(userType)) {
+    // Customer: send WhatsApp OTP automatically
+    const result = await sendWhatsAppOtp(phone, otp, userType);
+    if (!result.success) {
+      await createWhatsAppFailureNotification({ userId: user.id, userName: name, phone, userType, error: result.error });
+    }
+    res.status(201).json({
+      message: "تم إنشاء الحساب. سيتم إرسال رمز التحقق عبر واتساب",
+      isVerified: false,
+    });
+  } else {
+    // Helper: keep existing admin-mediated flow
+    const notifId = await createOtpNotification({ userId: user.id, userName: name, phone, userType });
+    if (notifId != null) void sendAdminOtpPush(notifId, user.id, phone, new Date().toISOString());
+    res.status(201).json({
+      message: "تم إنشاء الحساب. يرجى التواصل مع الإدارة للحصول على رمز التحقق",
+      isVerified: false,
+    });
+  }
 });
 
 // POST /auth/login — OTP for regular users; admin-PIN signal for admin phone
@@ -140,19 +218,37 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  const otp = generate4DigitOtp();
+  const otp = generate6DigitOtp();
   await db.update(usersTable).set({ otpCode: otp, otpCreatedAt: new Date() }).where(eq(usersTable.id, user.id));
-  req.log.info({ userId: user.id, isVerified: user.isVerified }, "OTP generated");
-  const notifId = await createOtpNotification({ userId: user.id, userName: user.name, phone, userType: user.userType });
-  if (notifId != null) void sendAdminOtpPush(notifId, user.id, phone, new Date().toISOString());
 
-  res.json({
-    message: user.isVerified
-      ? "تم إنشاء رمز تحقق، يرجى التواصل مع الإدارة للحصول عليه"
-      : "حسابك غير مفعل. يرجى إدخال رمز التحقق من الإدارة",
-    otp,
-    isVerified: user.isVerified,
-  });
+  req.log.info(
+    { userId: user.id, userType: user.userType, maskedPhone: maskPhone(phone), isVerified: user.isVerified },
+    "OTP generated",
+  );
+
+  if (shouldSendWhatsApp(user.userType)) {
+    // Customer: send WhatsApp OTP, no admin intervention required
+    const result = await sendWhatsAppOtp(phone, otp, user.userType);
+    if (!result.success) {
+      await createWhatsAppFailureNotification({ userId: user.id, userName: user.name, phone, userType: user.userType, error: result.error });
+    }
+    res.json({
+      message: user.isVerified
+        ? "تم إرسال رمز التحقق عبر واتساب"
+        : "تم إرسال رمز التحقق عبر واتساب، يرجى إدخاله لتفعيل حسابك",
+      isVerified: user.isVerified,
+    });
+  } else {
+    // Helper: keep existing admin-mediated flow
+    const notifId = await createOtpNotification({ userId: user.id, userName: user.name, phone, userType: user.userType });
+    if (notifId != null) void sendAdminOtpPush(notifId, user.id, phone, new Date().toISOString());
+    res.json({
+      message: user.isVerified
+        ? "تواصل مع الإدارة للحصول على رمز التفعيل"
+        : "حسابك غير مفعل. يرجى إدخال رمز التحقق من الإدارة",
+      isVerified: user.isVerified,
+    });
+  }
 });
 
 // POST /auth/admin-login — PIN login, returns persistent token
@@ -209,7 +305,10 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
   }
 
   if (!user.otpCreatedAt || Date.now() - user.otpCreatedAt.getTime() > OTP_EXPIRY_MS) {
-    res.status(400).json({ error: "انتهت صلاحية رمز التحقق، يرجى طلب رمز جديد من الإدارة" });
+    const expiryMsg = shouldSendWhatsApp(user.userType)
+      ? "انتهت صلاحية رمز التحقق، يرجى طلب رمز جديد"
+      : "انتهت صلاحية رمز التحقق، يرجى طلب رمز جديد من الإدارة";
+    res.status(400).json({ error: expiryMsg });
     return;
   }
 
@@ -235,7 +334,10 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
   (req as any).session = (req as any).session || {};
   (req as any).session.userId = user.id;
 
-  req.log.info({ userId: user.id, wasVerified: user.isVerified }, "User logged in via OTP");
+  req.log.info(
+    { userId: user.id, userType: user.userType, wasVerified: user.isVerified },
+    "User logged in via OTP",
+  );
   res.json({ user: safeUser(updated), token: authToken });
 });
 
