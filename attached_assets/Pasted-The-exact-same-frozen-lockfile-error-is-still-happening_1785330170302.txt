@@ -1,0 +1,82 @@
+The exact same frozen-lockfile error is still happening.
+
+Do not trigger another EAS build yet.
+
+The repository being uploaded to EAS still contains:
+
+artifacts/saedni-mobile/package.json:
+"react": "19.1.0"
+
+but pnpm-lock.yaml expects:
+react: catalog:
+
+Fix the actual remote repository state.
+
+Required steps:
+
+1. Run:
+   git status
+   git branch --show-current
+   git log -5 --oneline
+   git rev-parse HEAD
+   git rev-parse origin/main
+
+2. Show the exact React entries from:
+   grep -n '"react"' artifacts/saedni-mobile/package.json
+   grep -n -A5 -B5 'artifacts/saedni-mobile' pnpm-lock.yaml
+   cat pnpm-workspace.yaml
+
+3. Decide on one consistent source of truth.
+
+Preferred fix:
+Change artifacts/saedni-mobile/package.json back to:
+
+"react": "catalog:"
+
+provided pnpm-workspace.yaml defines the Expo-compatible React version.
+
+Do not manually change the generated lockfile.
+
+4. From the monorepo root run:
+   pnpm install
+
+5. Then run the exact CI command:
+   pnpm install --frozen-lockfile
+
+It must exit with code 0.
+
+6. Run:
+   git diff
+   git status
+
+7. Commit every required changed file, including:
+   - artifacts/saedni-mobile/package.json
+   - pnpm-lock.yaml
+   - pnpm-workspace.yaml only if it genuinely changed
+   - package.json files only if genuinely required
+
+8. Push to origin/main.
+
+9. Verify the remote files, not only local files:
+   git fetch origin
+   git show origin/main:artifacts/saedni-mobile/package.json | grep '"react"'
+   git show origin/main:pnpm-lock.yaml | grep -n -A5 -B5 'artifacts/saedni-mobile'
+
+10. Confirm:
+   git rev-parse HEAD
+   git rev-parse origin/main
+
+They must be identical.
+
+11. Only after all of that, run:
+   eas build --platform android --profile preview --clear-cache
+
+Provide:
+- successful output of pnpm install --frozen-lockfile
+- exact files committed
+- new commit hash
+- proof that HEAD equals origin/main
+- new EAS Build ID
+
+Do not use --no-frozen-lockfile.
+Do not trigger another build from an unpushed local commit.
