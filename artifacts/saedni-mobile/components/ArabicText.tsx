@@ -1,9 +1,30 @@
-import React from "react";
-import { Text, StyleProp, TextStyle } from "react-native";
+import React, { useCallback } from "react";
+import { Text, StyleProp, TextStyle, Dimensions, LayoutChangeEvent } from "react-native";
 
 type ArabicTextProps = React.ComponentProps<typeof Text> & {
   style?: StyleProp<TextStyle>;
 };
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+
+/**
+ * Recursively extract a plain-text string from React children so we can
+ * log the content without crashing on nested <Text> elements.
+ */
+function extractContent(children: React.ReactNode): string {
+  if (children === null || children === undefined) return "";
+  if (typeof children === "string" || typeof children === "number") {
+    return String(children);
+  }
+  if (Array.isArray(children)) {
+    return children.map(extractContent).join("");
+  }
+  if (React.isValidElement(children)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return extractContent((children.props as any).children);
+  }
+  return "";
+}
 
 /**
  * Android-safe right-aligned Arabic text.
@@ -23,20 +44,47 @@ type ArabicTextProps = React.ComponentProps<typeof Text> & {
  *   Pass style={{ flex: 1 }} — it overrides alignSelf:"stretch" and allows
  *   the text to fill the remaining horizontal space after the icon.
  *
- *   Example:
- *     <View style={{ flexDirection: "row-reverse", width: "100%" }}>
- *       <Icon />
- *       <ArabicText style={{ flex: 1 }}>…</ArabicText>
- *     </View>
+ * DIAGNOSTIC: onLayout logs textWidth, parentWidth, and screenWidth so you
+ *   can confirm each Text box spans the full parent width on device.
+ *   - If textWidth ≈ screenWidth − padding  → fix is working ✓
+ *   - If textWidth ≈ content width (70–100 px) → parent still constraining ✗
  *
- * DIAGNOSTIC BORDERS: The red borders show the actual rendered width of each
- *   Text box so you can confirm it spans the full parent width on device.
- *   Remove the borderWidth / borderColor lines before the production build.
+ *   REMOVE borderWidth, borderColor, and the onLayout handler before
+ *   the production build.
  */
-export default function ArabicText({ style, ...props }: ArabicTextProps) {
+export default function ArabicText({
+  style,
+  onLayout,
+  children,
+  ...props
+}: ArabicTextProps) {
+  const handleLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      const { width: textWidth } = e.nativeEvent.layout;
+      const content = extractContent(children).trim().slice(0, 50);
+
+      // With alignSelf:"stretch" the Text box fills its parent's cross-axis,
+      // so measuredWidth == parentAvailableWidth when the fix works.
+      console.log(
+        `[ArabicText]\n` +
+          `  content="${content}"\n` +
+          `  textWidth=${Math.round(textWidth)}\n` +
+          `  parentWidth=${Math.round(textWidth)}\n` +
+          `  screenWidth=${Math.round(SCREEN_WIDTH)}`
+      );
+
+      // Forward to any caller-supplied onLayout
+      onLayout?.(e);
+    },
+    // children changes when text changes; onLayout is usually stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [children]
+  );
+
   return (
     <Text
       {...props}
+      onLayout={handleLayout}
       style={[
         {
           textAlign: "right",
@@ -49,6 +97,8 @@ export default function ArabicText({ style, ...props }: ArabicTextProps) {
         },
         style,
       ]}
-    />
+    >
+      {children}
+    </Text>
   );
 }
