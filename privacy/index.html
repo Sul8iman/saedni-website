@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>سياسة الخصوصية – ساعدني</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   #1AA87D;
+      --primary-dk:#158f68;
+      --bg:        #F6F8F7;
+      --card:      #FFFFFF;
+      --text:      #1A1A1A;
+      --muted:     #6B7280;
+      --border:    #E5E7EB;
+      --radius:    16px;
+    }
+
+    body {
+      font-family: 'Noto Sans Arabic', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+      font-size: 16px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--primary);
+      color: #fff;
+      text-align: center;
+      padding: 48px 24px 40px;
+    }
+    header .logo {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    header p {
+      font-size: 0.95rem;
+      opacity: 0.85;
+    }
+
+    /* ── Layout ── */
+    main {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    .meta {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 32px 36px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+
+    .card h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card h2 .icon {
+      width: 32px;
+      height: 32px;
+      background: #e8f7f2;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .card p, .card li {
+      color: #374151;
+      font-size: 0.97rem;
+    }
+    .card ul {
+      padding-right: 20px;
+      margin-top: 10px;
+    }
+    .card li {
+      margin-bottom: 6px;
+    }
+    .card li::marker {
+      color: var(--primary);
+    }
+
+    /* ── Contact chip ── */
+    .contact-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #e8f7f2;
+      color: var(--primary-dk);
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 50px;
+      font-size: 0.95rem;
+      margin-top: 14px;
+      text-decoration: none;
+      border: 1px solid #b3e8d6;
+      transition: background 0.2s;
+    }
+    .contact-chip:hover { background: #d1f0e5; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 32px 16px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .card { padding: 24px 20px; }
+      header { padding: 36px 16px 32px; }
+      header .logo { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ساعدني</div>
+  <p>سياسة الخصوصية</p>
+</header>
+
+<main>
+  <p class="meta">آخر تحديث: يوليو ٢٠٢٥</p>
+
+  <!-- 1 -->
+  <div class="card">
+    <h2><span class="icon">📋</span> مقدمة</h2>
+    <p>
+      نحن في تطبيق <strong>ساعدني</strong> نلتزم بحماية خصوصيتك وأمان بياناتك الشخصية.
+      تشرح هذه السياسة كيفية جمعنا للمعلومات واستخدامها ومشاركتها عند استخدامك لتطبيقنا.
+      باستخدامك للتطبيق، فأنت توافق على هذه السياسة.
+    </p>
+  </div>
+
+  <!-- 2 -->
+  <div class="card">
+    <h2><span class="icon">📱</span> المعلومات التي نجمعها</h2>
+    <p>نجمع الأنواع التالية من المعلومات:</p>
+    <ul>
+      <li><strong>رقم الهاتف:</strong> يُستخدم للتسجيل والمصادقة عبر رمز OTP عبر واتساب.</li>
+      <li><strong>الاسم الكامل:</strong> يُدخله المستخدم أثناء إنشاء الحساب.</li>
+      <li><strong>نوع المستخدم:</strong> عميل أو مساعد.</li>
+      <li><strong>طلبات المساعدة:</strong> تفاصيل الطلبات التي تنشئها أو تقبلها.</li>
+      <li><strong>الموقع الجغرافي:</strong> يُطلب للمساعدة في عرض الطلبات القريبة منك (اختياري).</li>
+      <li><strong>رمز إشعارات الجهاز (Push Token):</strong> لإرسال الإشعارات الفورية.</li>
+    </ul>
+  </div>
+
+  <!-- 3 -->
+  <div class="card">
+    <h2><span class="icon">🎯</span> كيف نستخدم المعلومات</h2>
+    <ul>
+      <li>تشغيل الخدمة وتمكين التواصل بين العملاء والمساعدين.</li>
+      <li>التحقق من هوية المستخدم عبر رمز OTP.</li>
+      <li>عرض الطلبات القريبة من الموقع الجغرافي للمستخدم.</li>
+      <li>إرسال إشعارات فورية عند تحديث حالة الطلب.</li>
+      <li>الحفاظ على أمان الحساب ومنع الاستخدام الاحتيالي.</li>
+    </ul>
+  </div>
+
+  <!-- 4 -->
+  <div class="card">
+    <h2><span class="icon">💬</span> استخدام واتساب ورمز OTP</h2>
+    <p>
+      نستخدم <strong>واتساب Business API</strong> لإرسال رمز التحقق (OTP) إلى رقم هاتفك عند التسجيل
+      أو تسجيل الدخول. لا نخزّن رمز OTP بعد انتهاء مدة صلاحيته ولا نشاركه مع أي جهة خارجية.
+      يُستخدم رقم هاتفك فقط لأغراض المصادقة ولا يُعرَض للمستخدمين الآخرين.
+    </p>
+  </div>
+
+  <!-- 5 -->
+  <div class="card">
+    <h2><span class="icon">📍</span> استخدام الموقع الجغرافي</h2>
+    <p>
+      قد يطلب التطبيق إذن الوصول إلى موقعك الجغرافي لعرض طلبات المساعدة القريبة منك.
+      هذا الإذن اختياري تمامًا ويمكنك رفضه أو إلغاؤه في أي وقت من إعدادات جهازك.
+      لا نقوم بتتبع موقعك في الخلفية ولا نشاركه مع أطراف خارجية.
+    </p>
+  </div>
+
+  <!-- 6 -->
+  <div class="card">
+    <h2><span class="icon">🔔</span> الإشعارات الفورية</h2>
+    <p>
+      نستخدم خدمة <strong>Expo Notifications</strong> لإرسال إشعارات فورية تتعلق بطلباتك مثل:
+      قبول طلب، تحديث الحالة، أو وصول رسائل جديدة. يمكنك إيقاف الإشعارات في أي وقت
+      من إعدادات جهازك.
+    </p>
+  </div>
+
+  <!-- 7 -->
+  <div class="card">
+    <h2><span class="icon">🤝</span> مشاركة البيانات</h2>
+    <p>
+      <strong>لا نبيع بياناتك الشخصية ولا نشاركها مع أطراف خارجية</strong>، إلا في الحالات التالية:
+    </p>
+    <ul>
+      <li><strong>واتساب Business API:</strong> لإرسال رمز التحقق OTP فقط.</li>
+      <li><strong>Expo:</strong> لإرسال الإشعارات الفورية.</li>
+      <li><strong>المتطلبات القانونية:</strong> في حال طلبت السلطات المختصة ذلك وفق القانون العُماني.</li>
+    </ul>
+    <p style="margin-top:12px">جميع مزودي الخدمة ملزمون بحماية بياناتك وعدم استخدامها لأغراض أخرى.</p>
+  </div>
+
+  <!-- 8 -->
+  <div class="card">
+    <h2><span class="icon">🔒</span> أمان البيانات</h2>
+    <p>
+      نتخذ تدابير تقنية وتنظيمية معقولة لحماية بياناتك الشخصية، تشمل:
+    </p>
+    <ul>
+      <li>تشفير الاتصالات عبر HTTPS.</li>
+      <li>تخزين البيانات في قواعد بيانات مؤمّنة على خوادم مُدارة.</li>
+      <li>تقييد وصول الفريق للبيانات وفق مبدأ الحاجة إلى المعرفة.</li>
+      <li>عدم تخزين كلمات مرور أو رموز OTP بعد انتهاء صلاحيتها.</li>
+    </ul>
+  </div>
+
+  <!-- 9 -->
+  <div class="card">
+    <h2><span class="icon">⚖️</span> حقوق المستخدم</h2>
+    <p>لديك الحق في:</p>
+    <ul>
+      <li>الاطلاع على البيانات التي نحتفظ بها عنك.</li>
+      <li>طلب تصحيح أي بيانات غير دقيقة.</li>
+      <li>طلب حذف حسابك وبياناتك الشخصية نهائيًا.</li>
+      <li>سحب موافقتك على استخدام الموقع الجغرافي أو الإشعارات في أي وقت.</li>
+    </ul>
+    <p style="margin-top:12px">
+      لممارسة أي من هذه الحقوق، تواصل معنا عبر البريد الإلكتروني أدناه.
+    </p>
+  </div>
+
+  <!-- 10 -->
+  <div class="card">
+    <h2><span class="icon">✉️</span> التواصل معنا</h2>
+    <p>إذا كان لديك أي استفسار أو طلب يتعلق بخصوصيتك، يمكنك التواصل معنا عبر:</p>
+    <br/>
+    <a class="contact-chip" href="mailto:helpme.omani@gmail.com">
+      ✉️&nbsp; helpme.omani@gmail.com
+    </a>
+    <p style="margin-top:16px;font-size:0.9rem;color:#6B7280;">
+      سنردّ على طلبك في غضون ٧ أيام عمل.
+    </p>
+  </div>
+
+</main>
+
+<footer>
+  <p>© ٢٠٢٥ ساعدني – جميع الحقوق محفوظة</p>
+  <p style="margin-top:6px;">
+    <a href="../delete-account">طلب حذف الحساب</a>
+  </p>
+</footer>
+
+</body>
+</html>

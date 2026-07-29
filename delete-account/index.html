@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>حذف الحساب – ساعدني</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:    #1AA87D;
+      --primary-dk: #158f68;
+      --danger:     #DC2626;
+      --danger-lt:  #FEF2F2;
+      --danger-bd:  #FECACA;
+      --bg:         #F6F8F7;
+      --card:       #FFFFFF;
+      --text:       #1A1A1A;
+      --muted:      #6B7280;
+      --border:     #E5E7EB;
+      --radius:     16px;
+    }
+
+    body {
+      font-family: 'Noto Sans Arabic', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+      font-size: 16px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--primary);
+      color: #fff;
+      text-align: center;
+      padding: 48px 24px 40px;
+    }
+    header .logo {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    header p { font-size: 0.95rem; opacity: 0.85; }
+
+    /* ── Layout ── */
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    .meta {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 32px 36px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card h2 .icon {
+      width: 32px;
+      height: 32px;
+      background: #e8f7f2;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .card p, .card li { color: #374151; font-size: 0.97rem; }
+    .card ul { padding-right: 20px; margin-top: 10px; }
+    .card li { margin-bottom: 6px; }
+    .card li::marker { color: var(--primary); }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .step-num {
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; font-weight: 600; margin-bottom: 2px; }
+    .step-body span { font-size: 0.9rem; color: var(--muted); }
+
+    /* ── Warning banner ── */
+    .warning {
+      background: var(--danger-lt);
+      border: 1px solid var(--danger-bd);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    .warning-icon { font-size: 1.4rem; line-height: 1; flex-shrink: 0; }
+    .warning p { color: #991B1B; font-size: 0.93rem; font-weight: 500; }
+
+    /* ── Retained data card ── */
+    .retain-card {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 4px;
+    }
+    .retain-card h3 {
+      font-size: 0.97rem;
+      font-weight: 700;
+      color: #92400E;
+      margin-bottom: 10px;
+    }
+    .retain-card li { color: #78350F; font-size: 0.92rem; }
+    .retain-card ul { padding-right: 18px; }
+
+    /* ── Delete button ── */
+    .btn-delete {
+      display: block;
+      width: 100%;
+      background: var(--danger);
+      color: #fff;
+      font-family: 'Noto Sans Arabic', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 16px 24px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 24px;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.2px;
+    }
+    .btn-delete:hover  { background: #B91C1C; transform: translateY(-1px); }
+    .btn-delete:active { transform: translateY(0); }
+
+    /* ── Contact chip ── */
+    .contact-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #e8f7f2;
+      color: var(--primary-dk);
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 50px;
+      font-size: 0.95rem;
+      margin-top: 14px;
+      text-decoration: none;
+      border: 1px solid #b3e8d6;
+      transition: background 0.2s;
+    }
+    .contact-chip:hover { background: #d1f0e5; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 32px 16px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .card { padding: 24px 20px; }
+      header { padding: 36px 16px 32px; }
+      header .logo { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ساعدني</div>
+  <p>حذف الحساب</p>
+</header>
+
+<main>
+  <p class="meta">آخر تحديث: يوليو ٢٠٢٥</p>
+
+  <!-- Warning -->
+  <div class="warning">
+    <div class="warning-icon">⚠️</div>
+    <p>حذف الحساب إجراء نهائي وغير قابل للتراجع. يرجى قراءة هذه الصفحة بعناية قبل المتابعة.</p>
+  </div>
+
+  <!-- 1 – Process -->
+  <div class="card">
+    <h2><span class="icon">🗑️</span> كيفية حذف حسابك</h2>
+    <p>لطلب حذف حسابك من تطبيق ساعدني، اتبع الخطوات التالية:</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">١</div>
+        <div class="step-body">
+          <strong>أرسل طلب الحذف</strong>
+          <span>أرسل بريدًا إلكترونيًا إلى helpme.omani@gmail.com مستخدمًا زر "حذف الحساب" أدناه.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">٢</div>
+        <div class="step-body">
+          <strong>التحقق من الهوية</strong>
+          <span>سنطلب منك رقم هاتفك المسجّل لتأكيد هويتك قبل تنفيذ الطلب.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">٣</div>
+        <div class="step-body">
+          <strong>تنفيذ الحذف</strong>
+          <span>سيتم حذف حسابك وبياناتك الشخصية خلال ٧ أيام عمل من تأكيد طلبك.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">٤</div>
+        <div class="step-body">
+          <strong>تأكيد الحذف</strong>
+          <span>ستصلك رسالة تأكيد على البريد الإلكتروني بعد اكتمال عملية الحذف.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 – Deleted data -->
+  <div class="card">
+    <h2><span class="icon">✅</span> البيانات التي سيتم حذفها نهائيًا</h2>
+    <p>عند حذف حسابك، سيتم مسح البيانات التالية بشكل دائم:</p>
+    <ul>
+      <li>اسمك الكامل ورقم هاتفك.</li>
+      <li>سجل طلبات المساعدة التي أنشأتها أو قبلتها.</li>
+      <li>رمز الإشعارات الفوري (Push Token) المرتبط بجهازك.</li>
+      <li>تفضيلاتك وإعدادات حسابك.</li>
+      <li>أي محتوى أو صور مرتبطة بطلباتك.</li>
+    </ul>
+  </div>
+
+  <!-- 3 – Retained data -->
+  <div class="card">
+    <h2><span class="icon">📁</span> البيانات التي قد تُحتفظ بها مؤقتًا</h2>
+    <p>قد نحتفظ ببعض البيانات المحدودة لأغراض قانونية أو لمنع الاحتيال وفق المدة المطلوبة:</p>
+    <div class="retain-card">
+      <h3>⚠️ بيانات الاحتفاظ المؤقت</h3>
+      <ul>
+        <li>سجلات المعاملات المالية (إن وجدت) للامتثال للمتطلبات القانونية.</li>
+        <li>سجلات الدخول الأمنية لمنع إساءة الاستخدام أو الاحتيال.</li>
+        <li>المعلومات التي نُلزم قانونيًا بالاحتفاظ بها وفق القوانين العُمانية.</li>
+      </ul>
+    </div>
+    <p style="margin-top:14px;font-size:0.9rem;color:#6B7280;">
+      يتم حذف هذه البيانات تلقائيًا بعد انتهاء المدة القانونية المطلوبة، وعادةً لا تتجاوز ٩٠ يومًا.
+    </p>
+  </div>
+
+  <!-- 4 – CTA -->
+  <div class="card">
+    <h2><span class="icon">✉️</span> إرسال طلب حذف الحساب</h2>
+    <p>
+      اضغط على الزر أدناه لإرسال طلب حذف حسابك عبر البريد الإلكتروني.
+      يرجى تضمين رقم هاتفك المسجّل في التطبيق في رسالتك.
+    </p>
+
+    <a class="btn-delete"
+       href="mailto:helpme.omani@gmail.com?subject=Delete%20My%20Saedni%20Account&body=%D8%A3%D8%B1%D8%AC%D9%88%20%D8%AD%D8%B0%D9%81%20%D8%AD%D8%B3%D8%A7%D8%A8%D9%8A%20%D9%86%D9%87%D8%A7%D8%A6%D9%8A%D9%8B%D8%A7%20%D9%85%D9%86%20%D8%AA%D8%B7%D8%A8%D9%8A%D9%82%20%D8%B3%D8%A7%D8%B9%D8%AF%D9%86%D9%8A.%0A%0A%D8%B1%D9%82%D9%85%20%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81%20%D8%A7%D9%84%D9%85%D8%B3%D8%AC%D9%91%D9%84%3A%20">
+      🗑️&nbsp; حذف الحساب
+    </a>
+
+    <p style="margin-top:16px;font-size:0.88rem;color:#6B7280;text-align:center;">
+      أو تواصل معنا مباشرة على:
+    </p>
+    <div style="text-align:center;">
+      <a class="contact-chip" href="mailto:helpme.omani@gmail.com">
+        ✉️&nbsp; helpme.omani@gmail.com
+      </a>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <p>© ٢٠٢٥ ساعدني – جميع الحقوق محفوظة</p>
+  <p style="margin-top:6px;">
+    <a href="../privacy">سياسة الخصوصية</a>
+  </p>
+</footer>
+
+</body>
+</html>
