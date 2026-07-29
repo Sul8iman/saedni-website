@@ -1,5 +1,5 @@
 // @ts-check
-const { withAndroidManifest, withMainActivity } = require("@expo/config-plugins");
+const { withAndroidManifest, withMainActivity } = require("expo/config-plugins");
 
 /**
  * withAndroidRTL — forces native Android RTL before Fabric/React Native
