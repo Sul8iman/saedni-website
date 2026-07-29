@@ -1,0 +1,128 @@
+The Android preview APK was installed and tested after fully uninstalling the previous app.
+
+The RTL problem is still present: Arabic text still appears on the left.
+
+Therefore, the native Android RTL config plugin did not solve the actual visual problem.
+
+Do not create a production build.
+
+Do not add more I18nManager, Manifest, MainActivity, or writingDirection changes.
+
+The next investigation must focus on the actual React Native component widths and computed text styles.
+
+Task:
+
+1. Remove the custom native RTL plugin:
+   - remove ./plugins/withAndroidRTL from app.json
+   - remove plugins/withAndroidRTL.js
+   - preserve the official expo-localization RTL configuration
+   - preserve supportsRTL and forcesRTL
+
+2. Inspect the actual reusable UI components used across the application, especially:
+   - ArabicText
+   - ArabicTextInput
+   - SectionLabel
+   - Button text components
+   - Header/title components
+   - Form field wrappers
+   - Card components
+
+3. Determine whether the Text components have enough width to make textAlign: "right" visible.
+
+A Text component that only occupies the width of its own Arabic text will look left-positioned even when textAlign is "right".
+
+For all standalone labels and headings, verify the final style includes an appropriate width rule, such as:
+
+width: "100%"
+
+or:
+
+alignSelf: "stretch"
+
+or:
+
+flex: 1
+
+depending on the parent layout.
+
+4. Check every parent container for:
+   - alignItems: "flex-start"
+   - alignSelf: "flex-start"
+   - width missing
+   - flexShrink
+   - row containers whose children do not stretch
+   - wrappers that only take content width
+
+5. Create one centralized Android-safe Arabic text component:
+
+Example target behaviour:
+
+const ArabicText = ({ style, ...props }) => (
+  <Text
+    {...props}
+    style={[
+      {
+        textAlign: "right",
+        writingDirection: "rtl",
+        alignSelf: "stretch",
+      },
+      style,
+    ]}
+  />
+);
+
+Do not blindly use width: "100%" inside row layouts where it would break icons. For row layouts, use flex: 1 on the text portion.
+
+6. For labels inside rows containing an icon:
+
+<View style={{ flexDirection: "row", width: "100%" }}>
+  <Icon />
+  <ArabicText style={{ flex: 1 }} />
+</View>
+
+Ensure the text portion actually occupies the remaining width and is aligned right.
+
+7. Inspect TextInput separately. Each Arabic TextInput should have:
+
+textAlign: "right"
+
+and its container/input should have:
+
+width: "100%"
+
+Do not use writingDirection as the only Android fix.
+
+8. Start with only these two screens:
+   - Login
+   - New Request
+
+For each visible text element, provide a table containing:
+   - file
+   - component
+   - parent width/style
+   - text width/style
+   - reason it currently appears on the left
+   - exact fix
+
+9. Add a temporary visible diagnostic border around the label containers on Android so we can see whether each Text component spans the full screen width.
+
+For example, temporarily add:
+borderWidth: 1
+
+Do not include the borders in the final build.
+
+10. After fixing only Login and New Request, create another preview APK.
+
+Version:
+- keep version 1.0.8
+- increment Android versionCode to 16
+
+Do not create a production build.
+Do not submit to Google Play.
+
+Provide:
+- exact root cause found in the component hierarchy
+- exact files and lines changed
+- before/after component styles
+- new commit hash
+- new EAS preview Build ID
