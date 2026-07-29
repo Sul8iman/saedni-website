@@ -1,0 +1,72 @@
+Implement Option B — native Android RTL.
+
+Saedni is a fully Arabic application, so I do not want a first-launch reload, white flash, or expo-updates.reloadAsync workaround.
+
+Create an Expo config plugin that forces the Android application/root Activity to use RTL before React Native Fabric initializes.
+
+Requirements:
+
+1. Do not remove the existing:
+   - I18nManager.allowRTL(true)
+   - I18nManager.forceRTL(true)
+   - I18nManager.swapLeftAndRightInRTL(true)
+
+2. Create a proper Expo config plugin using official config-plugin APIs such as:
+   - withAndroidManifest
+   - and, if required, a native MainActivity modification through a supported mod
+
+3. Ensure RTL is applied natively before the React Native/Fabric root view is created.
+
+4. Do not assume that adding android:layoutDirection="rtl" to the application element is sufficient.
+   Verify that the generated AndroidManifest.xml contains a valid Android attribute in the correct element.
+
+5. Run:
+   npx expo prebuild --platform android --clean
+
+6. Inspect and provide the generated:
+   - android/app/src/main/AndroidManifest.xml
+   - MainActivity.kt, if modified
+   - config plugin file
+   - app.json plugin registration
+
+7. Run:
+   npx expo config --type prebuild
+
+8. Build and run locally on an Android emulator/device with the device language set to English.
+
+9. Test after:
+   - fresh install
+   - first launch
+   - app close and reopen
+   - Play-style update over the previous version
+
+10. Verify these screens:
+   - Login
+   - OTP/admin PIN
+   - Home
+   - New Request
+   - Available Requests
+   - Profile
+
+11. Confirm at runtime:
+   - I18nManager.isRTL === true
+   - root layout direction is RTL
+   - Arabic text is right aligned
+   - rows and icons are ordered correctly
+   - no first-launch restart occurs
+   - iOS behaviour remains unchanged
+
+12. Remove any temporary RTL debug labels before building.
+
+Version:
+- app version: 1.0.8
+- Android versionCode: 15
+
+Do not submit to Google Play yet.
+
+First provide:
+- exact files changed
+- generated native Android output
+- screenshots from an English-language Android device
+- confirmation that RTL works on the first launch after a fresh install
+- commit hash
