@@ -3,7 +3,7 @@
     "name": "ساعدني",
     "slug": "saedni",
     "owner": "sul8iman",
-    "version": "1.0.1",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "saedni",
@@ -28,7 +28,7 @@
     },
     "android": {
       "package": "com.saedni.app",
-      "versionCode": 4,
+      "versionCode": 15,
       "supportsRtl": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
@@ -50,6 +50,7 @@
       "expo-font",
       "expo-web-browser",
       "expo-secure-store",
+      "expo-localization",
       "@react-native-community/datetimepicker",
       [
         "expo-notifications",
@@ -58,13 +59,16 @@
           "color": "#1AA87D",
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "./plugins/withAndroidRTL"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
     "extra": {
+      "supportsRTL": true,
+      "forcesRTL": true,
       "eas": {
         "projectId": "41abb564-bfc1-4e71-94c3-49e2d4ea642d"
       }
