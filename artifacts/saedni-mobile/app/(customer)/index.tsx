@@ -13,6 +13,7 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { CATEGORIES, AREAS } from "@/constants/categories";
 import type { CategoryValue } from "@/constants/categories";
+import ArabicText from "@/components/ArabicText";
 
 const BASE = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
 
@@ -133,8 +134,8 @@ export default function CustomerHomeScreen() {
       {/* Header */}
       <SafeAreaView edges={["top"]} style={s.headerSafe}>
         <View style={s.headerInner}>
-          <Text style={s.headerSub}>ماذا تحتاج اليوم؟</Text>
-          <Text style={s.headerTitle}>ساعدني</Text>
+          <ArabicText style={s.headerSub}>ماذا تحتاج اليوم؟</ArabicText>
+          <ArabicText style={s.headerTitle}>ساعدني</ArabicText>
         </View>
       </SafeAreaView>
 
@@ -149,7 +150,7 @@ export default function CustomerHomeScreen() {
         {isBlocked && (
           <View style={s.alertBox}>
             <Ionicons name="shield-outline" size={18} color="#DC2626" />
-            <Text style={s.alertTxt}>تم تعطيل حسابك. يرجى التواصل مع الإدارة</Text>
+            <ArabicText style={s.alertTxt}>تم تعطيل حسابك. يرجى التواصل مع الإدارة</ArabicText>
           </View>
         )}
 
@@ -167,7 +168,7 @@ export default function CustomerHomeScreen() {
         )}
 
         {/* ── Categories: 2 rows × 3 columns, RTL ── */}
-        <Text style={s.sectionLabel}>ساعدني في:</Text>
+        <ArabicText style={s.sectionLabel}>ساعدني في:</ArabicText>
         <View style={s.catGrid}>
           {catRows.map((row, rowIdx) => (
             <View key={rowIdx} style={s.catRow}>
@@ -197,7 +198,7 @@ export default function CustomerHomeScreen() {
         </View>
 
         {/* Details */}
-        <Text style={s.sectionLabel}>تفاصيل الطلب</Text>
+        <ArabicText style={s.sectionLabel}>تفاصيل الطلب</ArabicText>
         <TextInput
           style={[s.textarea, isBlocked && s.disabled]}
           value={details}
@@ -212,7 +213,7 @@ export default function CustomerHomeScreen() {
         />
 
         {/* Time type toggle */}
-        <Text style={s.sectionLabel}>الوقت</Text>
+        <ArabicText style={s.sectionLabel}>الوقت</ArabicText>
         <View style={s.segmented}>
           {(["now", "scheduled"] as const).map((t) => (
             <TouchableOpacity
@@ -239,7 +240,7 @@ export default function CustomerHomeScreen() {
           <View style={s.scheduledCard}>
             <View style={s.scheduledHeader}>
               <Ionicons name="calendar" size={16} color={colors.primary} />
-              <Text style={s.scheduledHeaderTxt}>اختر موعد الطلب</Text>
+              <ArabicText style={[s.scheduledHeaderTxt, { flex: 1 }]}>اختر موعد الطلب</ArabicText>
             </View>
 
             {/* Date row */}
@@ -313,7 +314,7 @@ export default function CustomerHomeScreen() {
         )}
 
         {/* Area */}
-        <Text style={s.sectionLabel}>المنطقة</Text>
+        <ArabicText style={s.sectionLabel}>المنطقة</ArabicText>
         <TouchableOpacity
           style={[s.picker, isBlocked && s.disabled]}
           onPress={() => !isBlocked && setAreaPickerVisible(true)}
@@ -327,7 +328,7 @@ export default function CustomerHomeScreen() {
         </TouchableOpacity>
 
         {/* Amount */}
-        <Text style={s.sectionLabel}>المبلغ المدفوع</Text>
+        <ArabicText style={s.sectionLabel}>المبلغ المدفوع</ArabicText>
         <View style={[s.amountRow, isBlocked && s.disabled]}>
           <Text style={s.currencyLabel}>ر.ع.</Text>
           <TextInput

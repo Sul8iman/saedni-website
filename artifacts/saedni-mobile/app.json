@@ -28,7 +28,7 @@
     },
     "android": {
       "package": "com.saedni.app",
-      "versionCode": 15,
+      "versionCode": 16,
       "supportsRtl": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
@@ -59,8 +59,7 @@
           "color": "#1AA87D",
           "defaultChannel": "default"
         }
-      ],
-      "./plugins/withAndroidRTL"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -10,6 +10,7 @@ import * as Haptics from "expo-haptics";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, type AuthUser } from "@/contexts/AuthContext";
+import ArabicText from "@/components/ArabicText";
 
 type Step = "phone" | "otp" | "pin";
 
@@ -199,8 +200,8 @@ export default function LoginScreen() {
           {/* ── Phone step ── */}
           {step === "phone" && (
             <>
-              <Text style={s.cardTitle}>تسجيل الدخول</Text>
-              <Text style={s.fieldLabel}>رقم الهاتف</Text>
+              <ArabicText style={s.cardTitle}>تسجيل الدخول</ArabicText>
+              <ArabicText style={s.fieldLabel}>رقم الهاتف</ArabicText>
               <TextInput
                 style={s.input}
                 value={phone}
@@ -235,24 +236,24 @@ export default function LoginScreen() {
           {/* ── OTP step ── */}
           {step === "otp" && (
             <>
-              <Text style={s.cardTitle}>رمز التحقق</Text>
+              <ArabicText style={s.cardTitle}>رمز التحقق</ArabicText>
 
               {isUnverified && (
                 <View style={s.warnBox}>
                   <Ionicons name="warning-outline" size={16} color="#92400E" />
-                  <Text style={s.warnTxt}>حسابك غير مفعّل — أدخل رمز التحقق لتفعيله</Text>
+                  <ArabicText style={s.warnTxt}>حسابك غير مفعّل — أدخل رمز التحقق لتفعيله</ArabicText>
                 </View>
               )}
 
-              <Text style={s.subLabel}>
+              <ArabicText style={s.subLabel}>
                 الرقم: <Text style={s.subLabelBold}>{phone}</Text>
-              </Text>
+              </ArabicText>
 
               {otpDelivery === "whatsapp" ? (
                 // Customer: OTP sent via WhatsApp automatically
                 <View style={s.waInfoBox}>
                   <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
-                  <Text style={s.waInfoTxt}>أدخل رمز التحقق المرسل إلى رقم واتساب المسجل.</Text>
+                  <ArabicText style={s.waInfoTxt}>أدخل رمز التحقق المرسل إلى رقم واتساب المسجل.</ArabicText>
                 </View>
               ) : (
                 // Helper / manual flow: contact admin
@@ -299,7 +300,7 @@ export default function LoginScreen() {
                 <Ionicons name="shield-checkmark" size={16} color={colors.primary} />
                 <Text style={s.adminBadgeTxt}>دخول المدير</Text>
               </View>
-              <Text style={s.fieldLabel}>رمز PIN</Text>
+              <ArabicText style={s.fieldLabel}>رمز PIN</ArabicText>
               <TextInput
                 style={[s.input, s.otpInput]}
                 value={pin}
