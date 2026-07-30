@@ -329,6 +329,18 @@ export default function LoginScreen() {
             </>
           )}
         </View>
+
+        {/* ── DIAGNOSTIC: RTL test navigation — remove before production ── */}
+        <TouchableOpacity
+          onPress={() => router.push("/rtl-test" as never)}
+          style={{ alignItems: "center", paddingVertical: 16, marginTop: 8 }}
+        >
+          <Text style={{ fontSize: 11, color: "#9CA3AF" }}>
+            [RTL Test Screen]
+          </Text>
+        </TouchableOpacity>
+        {/* ──────────────────────────────────────────────────────────────── */}
+
       </KeyboardAwareScrollViewCompat>
     </SafeAreaView>
   );

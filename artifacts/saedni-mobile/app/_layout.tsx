@@ -139,6 +139,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(helper)" />
         <Stack.Screen name="(admin)" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="rtl-test" />
       </Stack>
     </>
   );
