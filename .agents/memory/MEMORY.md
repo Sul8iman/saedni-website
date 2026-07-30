@@ -3,3 +3,4 @@
 - [EAS build domain fix](eas-domain-fix.md) — EXPO_PUBLIC_DOMAIN must be in eas.json production env block; missing it causes native fetch to use relative URLs which fail on device.
 - [Expo SecureStore+AsyncStorage dual-write](expo-securestore-dual-write.md) — three bugs that together caused persistent logout on every launch; secureGet/secureSet must dual-write and dual-check both stores.
 - [Admin push notification architecture](admin-push-arch.md) — unified push module in api-server/src/lib/push.ts; admin registers via useAdminPushRegistration; OTP tap routes to /(admin)/user-detail.
+- [Expo prebuild package.json pollution](prebuild-pollution.md) — prebuild injects expo/react/react-native into dependencies every run; always `git checkout -- package.json` after prebuild, never commit those mutations.
