@@ -15,7 +15,7 @@ const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? "saedni.onrender.com"}
 interface User {
   id: number; name: string; phone: string; userType: string;
   isActive: boolean; isVerified: boolean; isBlocked: boolean;
-  otpCode?: string | null; area?: string | null;
+  helperActivationCodeActive?: boolean | null; area?: string | null;
 }
 
 type Filter = "all" | "customer" | "helper";
@@ -91,10 +91,10 @@ export default function AdminUsersScreen() {
               <Ionicons name="chevron-back" size={14} color={colors.mutedForeground} style={s.chevron} />
             </View>
             <Text style={s.userPhone}>{item.phone}</Text>
-            {item.otpCode && (
+            {item.userType === "helper" && item.helperActivationCodeActive === true && !item.isVerified && (
               <View style={s.otpChip}>
                 <Ionicons name="key-outline" size={11} color={colors.mutedForeground} />
-                <Text style={s.otpTxt}>OTP: {item.otpCode}</Text>
+                <Text style={s.otpTxt}>رمز تفعيل نشط</Text>
               </View>
             )}
           </View>

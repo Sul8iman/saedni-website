@@ -11,13 +11,19 @@ import {
 const router: IRouter = Router();
 
 function safeUser(user: typeof usersTable.$inferSelect) {
-  const { passwordHash: _, ...safe } = user;
+  const {
+    passwordHash: _,
+    helperActivationCodeHash: __,   // never expose hash to any client
+    ...safe
+  } = user;
   return {
     ...safe,
     isActive: !safe.isBlocked,
     createdAt: safe.createdAt.toISOString(),
     lastLogin: safe.lastLogin?.toISOString() ?? null,
     otpCreatedAt: safe.otpCreatedAt?.toISOString() ?? null,
+    helperActivationCodeCreatedAt: safe.helperActivationCodeCreatedAt?.toISOString() ?? null,
+    helperActivationCodeUsedAt: safe.helperActivationCodeUsedAt?.toISOString() ?? null,
   };
 }
 

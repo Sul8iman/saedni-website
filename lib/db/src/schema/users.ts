@@ -21,6 +21,11 @@ export const usersTable = pgTable("users", {
   preferredAreas:  text("preferred_areas"),
   authToken: text("auth_token").unique(),
   expoPushToken: text("expo_push_token"),
+  // Helper-specific activation code (non-expiring, hashed)
+  helperActivationCodeHash: text("helper_activation_code_hash"),
+  helperActivationCodeCreatedAt: timestamp("helper_activation_code_created_at", { withTimezone: true }),
+  helperActivationCodeUsedAt: timestamp("helper_activation_code_used_at", { withTimezone: true }),
+  helperActivationCodeActive: boolean("helper_activation_code_active").notNull().default(false),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({

@@ -57,6 +57,7 @@ export async function sendAdminOtpPush(
   userId: number | null | undefined,
   phone: string,
   requestTime: string,
+  activationCode?: string,
 ): Promise<void> {
   if (notifiedOtpIds.has(notificationId)) {
     logger.warn({ notificationId }, "push: admin OTP duplicate suppressed (idempotency)");
@@ -96,11 +97,15 @@ export async function sendAdminOtpPush(
       "push: admin OTP dispatch started",
     );
 
+    const body = activationCode
+      ? `رمز تفعيل المساعد: ${activationCode}\nاضغط لعرض بيانات المستخدم.`
+      : "قام مستخدم بطلب رمز تحقق جديد.\nاضغط لعرض بيانات المستخدم.";
+
     await batchSendPush(
       uniqueTokens,
       {
         title: "طلب رمز تحقق جديد",
-        body: "قام مستخدم بطلب رمز تحقق جديد.\nاضغط لعرض بيانات المستخدم.",
+        body,
         data: {
           notificationType: "otp_request",
           notificationId,

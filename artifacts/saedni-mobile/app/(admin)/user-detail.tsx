@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, Modal, TextInput,
+  ActivityIndicator, Alert,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,8 +23,10 @@ interface UserDetail {
   isVerified: boolean;
   isBlocked: boolean;
   isActive: boolean;
-  otpCode?: string | null;
-  otpCreatedAt?: string | null;
+  // Helper-specific activation code status (hash never returned)
+  helperActivationCodeActive?: boolean | null;
+  helperActivationCodeCreatedAt?: string | null;
+  helperActivationCodeUsedAt?: string | null;
   createdAt: string;
   lastLogin?: string | null;
 }
@@ -106,8 +108,6 @@ export default function UserDetailScreen() {
     fallbackTime?: string;
   }>();
   const userId = Number(id);
-  const [otpModalVisible, setOtpModalVisible] = useState(false);
-  const otpInputRef = useRef<TextInput>(null);
 
   const { data: user, isLoading: userLoading } = useQuery<UserDetail>({
     queryKey: ["admin-user-detail", userId],
@@ -150,6 +150,27 @@ export default function UserDetailScreen() {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: () => Alert.alert("خطأ", "تعذر تحديث حالة المستخدم"),
+  });
+
+  const regenCodeMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`${BASE}/api/admin/helpers/${userId}/regenerate-code`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error((body as any).error ?? "فشل إنشاء الرمز");
+      }
+      return r.json();
+    },
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      qc.invalidateQueries({ queryKey: ["admin-user-detail", userId] });
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      Alert.alert("تم", "تم إنشاء رمز تفعيل جديد وإلغاء الرمز السابق.\nستصل الإشعار برمز التفعيل الجديد.");
+    },
+    onError: (e: Error) => Alert.alert("خطأ", e.message),
   });
 
   const deleteMutation = useMutation({
@@ -316,37 +337,71 @@ export default function UserDetailScreen() {
           </View>
         </View>
 
-        {/* OTP Section (only if OTP present) */}
-        {(user.otpCode || user.otpCreatedAt) && (
+        {/* Helper Activation Code Section */}
+        {isHelper && (
           <View style={s.section}>
-            <Text style={s.sectionTitle}>رمز OTP</Text>
+            <Text style={s.sectionTitle}>رمز التفعيل</Text>
             <View style={s.infoCard}>
-              {user.otpCode && (
-                <View style={s.otpRow}>
-                  <TouchableOpacity
-                    style={s.otpCopyBtn}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setOtpModalVisible(true);
-                    }}
-                    activeOpacity={0.75}
-                  >
-                    <Ionicons name="copy-outline" size={15} color={colors.primary} />
-                    <Text style={s.otpCopyTxt}>نسخ</Text>
-                  </TouchableOpacity>
-                  <View style={s.otpCodeGroup}>
-                    <Text style={s.otpCode}>{user.otpCode}</Text>
-                    <View style={s.otpLabelGroup}>
-                      <Ionicons name="key-outline" size={15} color={colors.mutedForeground} />
-                      <Text style={s.otpLabel}>الرمز الحالي</Text>
-                    </View>
-                  </View>
-                </View>
+              <InfoRow
+                icon="key-outline"
+                label="حالة الرمز"
+                value={
+                  user.helperActivationCodeUsedAt
+                    ? "مستخدم"
+                    : user.helperActivationCodeActive
+                    ? "نشط (لم يُستخدم بعد)"
+                    : "لا يوجد رمز نشط"
+                }
+                valueColor={
+                  user.helperActivationCodeUsedAt
+                    ? colors.mutedForeground
+                    : user.helperActivationCodeActive
+                    ? colors.primary
+                    : "#F59E0B"
+                }
+              />
+              {user.helperActivationCodeCreatedAt && (
+                <InfoRow
+                  icon="time-outline"
+                  label="تاريخ الإنشاء"
+                  value={fmtDate(user.helperActivationCodeCreatedAt)}
+                />
               )}
-              {user.otpCreatedAt && (
-                <InfoRow icon="time-outline" label="وقت الإنشاء" value={fmtDate(user.otpCreatedAt)} />
+              {user.helperActivationCodeUsedAt && (
+                <InfoRow
+                  icon="checkmark-circle-outline"
+                  label="تاريخ الاستخدام"
+                  value={fmtDate(user.helperActivationCodeUsedAt)}
+                />
               )}
             </View>
+
+            {/* Regenerate code button — only for unverified, non-blocked helpers */}
+            {!user.isVerified && !user.isBlocked && (
+              <TouchableOpacity
+                style={[s.regenBtn, regenCodeMutation.isPending && { opacity: 0.6 }]}
+                disabled={regenCodeMutation.isPending}
+                onPress={() =>
+                  Alert.alert(
+                    "إنشاء رمز جديد",
+                    user.helperActivationCodeActive
+                      ? "سيتم إلغاء الرمز الحالي وإنشاء رمز جديد. هل تريد المتابعة؟"
+                      : "هل تريد إنشاء رمز تفعيل جديد لهذا المساعد؟",
+                    [
+                      { text: "إلغاء", style: "cancel" },
+                      {
+                        text: "إنشاء",
+                        onPress: () => regenCodeMutation.mutate(),
+                      },
+                    ]
+                  )
+                }
+                activeOpacity={0.8}
+              >
+                <Ionicons name="refresh-circle-outline" size={18} color={colors.primary} />
+                <Text style={s.regenBtnTxt}>إنشاء رمز جديد</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -457,37 +512,6 @@ export default function UserDetailScreen() {
         )}
       </ScrollView>
 
-      {/* OTP Copy Modal */}
-      <Modal
-        visible={otpModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOtpModalVisible(false)}
-      >
-        <View style={s.modalOverlay}>
-          <View style={s.modalCard}>
-            <Text style={s.modalTitle}>رمز التحقق</Text>
-            <Text style={s.modalHint}>اضغط مطولاً على الرمز لنسخه</Text>
-            <TextInput
-              ref={otpInputRef}
-              style={s.modalOtpInput}
-              value={user?.otpCode ?? ""}
-              selectTextOnFocus
-              contextMenuHidden={false}
-              editable
-              caretHidden
-              onChangeText={() => {}}
-            />
-            <TouchableOpacity
-              style={s.modalCloseBtn}
-              onPress={() => setOtpModalVisible(false)}
-              activeOpacity={0.8}
-            >
-              <Text style={s.modalCloseTxt}>إغلاق</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -684,6 +708,14 @@ const makeStyles = (c: ReturnType<typeof useColors>, _bottomInset: number) =>
       shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.04, shadowRadius: 3, elevation: 1,
     },
+
+    // Regen code button
+    regenBtn: {
+      flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 8,
+      borderRadius: 12, paddingVertical: 13, marginTop: 10,
+      backgroundColor: c.secondary, borderWidth: 1, borderColor: c.primary + "40",
+    },
+    regenBtnTxt: { fontSize: 15, fontWeight: "700", color: c.primary },
 
     // Actions
     actionsCard: { gap: 10 },
