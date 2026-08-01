@@ -1,0 +1,80 @@
+Update only the helper manual activation-code flow.
+
+Current problem:
+When a helper registers, the admin receives a code that expires after 10 minutes. Sometimes the admin is unavailable during that period.
+
+Required behavior:
+
+1. Customer/requester OTP:
+- Keep unchanged.
+- Sent automatically through WhatsApp.
+- Valid for 10 minutes.
+- Do not modify this flow.
+
+2. Helper activation code:
+- Must NOT expire based on time.
+- It remains valid until one of these happens:
+  a. The helper successfully uses it.
+  b. The admin generates a replacement code.
+  c. The admin disables or blocks the helper account.
+
+3. The helper code must be single-use:
+- After successful verification, mark it as used or remove it.
+- It must never work again.
+
+4. Add an admin action:
+"إنشاء رمز جديد"
+
+The admin must be able to generate a new 6-digit code for any unverified helper.
+
+5. When a new code is generated:
+- Invalidate the previous helper code immediately.
+- Save only the newest code as active.
+- Notify the admin with the new code.
+- Do not automatically send it to the helper.
+- The helper still contacts the admin manually.
+
+6. Admin UI:
+On the helper details page, show:
+- Current activation status
+- Whether an active code exists
+- Button: "إنشاء رمز جديد"
+- Confirmation before replacing an existing code
+- Success message:
+  "تم إنشاء رمز تفعيل جديد وإلغاء الرمز السابق."
+
+Do not display the code in general user lists. Show it only in the helper’s admin details screen or the admin notification.
+
+7. Backend/data model:
+Use explicit fields such as:
+- helperActivationCodeHash
+- helperActivationCodeCreatedAt
+- helperActivationCodeUsedAt
+- helperActivationCodeActive
+
+Prefer storing a hash rather than the plain code.
+
+Do not reuse the customer OTP expiry field for helper activation.
+
+8. Verification:
+- Helper code works after more than 10 minutes.
+- Helper code works after several hours or days if it has not been used or replaced.
+- Old code fails immediately after the admin generates a new one.
+- Code fails after successful use.
+- Customer WhatsApp OTP still expires after exactly 10 minutes.
+
+9. Security:
+- Keep the code at 6 digits.
+- Add rate limiting for verification attempts.
+- Never return helper activation codes through public API responses.
+- Never write plain codes to ordinary application logs.
+
+10. Commit and push only to:
+Sul8iman/saedni
+branch: main
+
+Report:
+- Files changed
+- Database migration
+- Commit SHA
+- Test results for all five cases above
