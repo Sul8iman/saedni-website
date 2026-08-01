@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Modal, Clipboard,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -152,8 +152,10 @@ export default function UserDetailScreen() {
     onError: () => Alert.alert("خطأ", "تعذر تحديث حالة المستخدم"),
   });
 
+  const [newCode, setNewCode] = useState<string | null>(null);
+
   const regenCodeMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<{ message: string; activationCode: string }> => {
       const r = await fetch(`${BASE}/api/admin/helpers/${userId}/regenerate-code`, {
         method: "POST",
         credentials: "include",
@@ -164,11 +166,11 @@ export default function UserDetailScreen() {
       }
       return r.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       qc.invalidateQueries({ queryKey: ["admin-user-detail", userId] });
       qc.invalidateQueries({ queryKey: ["admin-users"] });
-      Alert.alert("تم", "تم إنشاء رمز تفعيل جديد وإلغاء الرمز السابق.\nستصل الإشعار برمز التفعيل الجديد.");
+      setNewCode(data.activationCode);
     },
     onError: (e: Error) => Alert.alert("خطأ", e.message),
   });
@@ -512,6 +514,43 @@ export default function UserDetailScreen() {
         )}
       </ScrollView>
 
+      {/* ── One-time activation code modal ── */}
+      <Modal
+        visible={newCode !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNewCode(null)}
+      >
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <Ionicons name="key-outline" size={32} color={colors.primary} style={{ marginBottom: 8 }} />
+            <Text style={s.modalTitle}>رمز التفعيل الجديد</Text>
+            <Text style={s.modalWarn}>احفظ الرمز الآن، لن يظهر مرة أخرى.</Text>
+            <View style={s.modalCodeBox}>
+              <Text style={s.modalCode}>{newCode}</Text>
+            </View>
+            <TouchableOpacity
+              style={s.modalCopyBtn}
+              activeOpacity={0.8}
+              onPress={() => {
+                Clipboard.setString(newCode ?? "");
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Alert.alert("تم النسخ", "تم نسخ رمز التفعيل");
+              }}
+            >
+              <Ionicons name="copy-outline" size={16} color={colors.primaryForeground} />
+              <Text style={s.modalCopyTxt}>نسخ الرمز</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.modalCloseBtn}
+              activeOpacity={0.8}
+              onPress={() => setNewCode(null)}
+            >
+              <Text style={s.modalCloseTxt}>إغلاق</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -708,6 +747,45 @@ const makeStyles = (c: ReturnType<typeof useColors>, _bottomInset: number) =>
       shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.04, shadowRadius: 3, elevation: 1,
     },
+
+    // One-time code modal
+    modalOverlay: {
+      flex: 1, backgroundColor: "rgba(0,0,0,0.55)",
+      justifyContent: "center", alignItems: "center",
+    },
+    modalCard: {
+      backgroundColor: c.card, borderRadius: 20, paddingHorizontal: 28,
+      paddingTop: 28, paddingBottom: 24, width: "82%", alignItems: "center",
+      shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.18, shadowRadius: 12, elevation: 8,
+    },
+    modalTitle: { fontSize: 18, fontWeight: "800", color: c.foreground, marginBottom: 6 },
+    modalWarn: {
+      fontSize: 12, color: "#DC2626", fontWeight: "600",
+      textAlign: "center", marginBottom: 18,
+    },
+    modalCodeBox: {
+      borderWidth: 1.5, borderColor: c.primary + "50",
+      borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14,
+      backgroundColor: c.secondary, marginBottom: 18, width: "100%",
+      alignItems: "center",
+    },
+    modalCode: {
+      fontSize: 34, fontWeight: "800", color: c.primary,
+      letterSpacing: 8, textAlign: "center",
+    },
+    modalCopyBtn: {
+      flexDirection: "row-reverse", alignItems: "center", gap: 8,
+      backgroundColor: c.primary, borderRadius: 10,
+      paddingHorizontal: 28, paddingVertical: 11, marginBottom: 10, width: "100%",
+      justifyContent: "center",
+    },
+    modalCopyTxt: { fontSize: 15, fontWeight: "700", color: c.primaryForeground },
+    modalCloseBtn: {
+      borderWidth: 1, borderColor: c.border, borderRadius: 10,
+      paddingHorizontal: 28, paddingVertical: 10, width: "100%", alignItems: "center",
+    },
+    modalCloseTxt: { fontSize: 14, fontWeight: "600", color: c.mutedForeground },
 
     // Regen code button
     regenBtn: {

@@ -200,10 +200,11 @@ router.post("/admin/helpers/:id/regenerate-code", async (req, res): Promise<void
     // Non-fatal — code was saved, continue
   }
 
+  // Return the plain code exactly once in this authenticated admin response.
+  // It is never stored in plaintext, never logged, and never returned by any GET endpoint.
   res.json({
-    success: true,
     message: "تم إنشاء رمز تفعيل جديد وإلغاء الرمز السابق.",
-    user: safeUser(updated),
+    activationCode: code,
   });
 });
 
