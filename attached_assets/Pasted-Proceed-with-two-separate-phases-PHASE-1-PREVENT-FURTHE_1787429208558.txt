@@ -1,0 +1,186 @@
+Proceed with two separate phases:
+
+PHASE 1 — PREVENT FURTHER REQUEST LOSS
+PHASE 2 — PREPARE SAFE RECOVERY OF THE 19 MISSING REQUESTS
+
+Repository:
+Sul8iman/saedni
+Branch:
+main
+
+Do NOT restore data yet until Phase 1 is complete and verified.
+
+==================================================
+PHASE 1 — SECURE REQUEST DELETION
+==================================================
+
+Current confirmed issue:
+
+19 requests were physically deleted from production Supabase.
+
+Existing destructive paths include:
+
+1. DELETE /api/requests/:id
+   - currently permanently deletes a request
+   - historically had insufficient authorization
+
+2. Admin user deletion
+   - deletes requests belonging to that customer before deleting the user
+
+Required changes:
+
+A. Disable permanent request deletion from normal app/API behavior.
+
+B. Replace normal request deletion with soft delete.
+
+Add fields such as:
+
+deleted_at timestamptz
+deleted_by_user_id
+deleted_reason
+
+or another appropriate audit-safe design.
+
+C. Only admins should be allowed to permanently delete a request, and permanent deletion should NOT be exposed in normal mobile UI.
+
+D. For admin delete actions:
+Prefer soft delete by default.
+
+E. Protect:
+DELETE /api/requests/:id
+
+Require authenticated authorization.
+
+At minimum:
+- requester can only delete their own request
+OR
+- admin can delete
+- no anonymous deletion
+
+F. Add an audit trail for request lifecycle actions:
+- created
+- completed
+- marked help completed
+- marked help not completed
+- soft deleted
+- restored
+
+Do not store sensitive tokens/OTPs in audit logs.
+
+G. Existing current five requests must remain unchanged.
+
+==================================================
+PHASE 1 TESTS
+==================================================
+
+Verify:
+
+1. Anonymous DELETE /api/requests/:id → 401/403
+2. User A cannot delete User B request
+3. Request owner can perform allowed action according to current product behavior
+4. Admin can soft-delete
+5. Soft-deleted request remains physically in database
+6. Default user-facing list hides soft-deleted requests
+7. Admin can see deleted requests/history
+8. No permanent DELETE FROM requests occurs during normal flow
+
+==================================================
+PHASE 2 — RECOVERY INVESTIGATION
+==================================================
+
+Do not write anything to production yet.
+
+Use Supabase backup/PITR if available.
+
+Required process:
+
+1. Determine the approximate deletion window using:
+   - previous screenshot timestamps
+   - database/user timestamps
+   - Render/Supabase logs if available
+
+2. Check:
+Supabase Dashboard → Database → Backups
+and Point-in-Time Recovery availability.
+
+3. Restore a pre-deletion snapshot ONLY into an isolated recovery environment.
+
+Do NOT restore over production.
+
+4. Compare recovery.requests with current production requests.
+
+Current production IDs:
+116
+120
+131
+132
+136
+
+5. Identify all rows present before the incident but absent now.
+
+6. Verify whether the expected missing count is exactly 19.
+
+7. For each missing request, verify:
+- owner/customer still exists in current production
+- category/location fields are valid
+- no duplicate request already exists
+- timestamps/status values are preserved
+
+8. Produce a recovery SQL script that inserts ONLY the verified missing requests.
+
+Use explicit request IDs and full column list.
+
+Do NOT execute the recovery script yet.
+
+9. Make the recovery script transactional and conflict-safe.
+
+Example approach:
+
+BEGIN;
+INSERT INTO requests (...)
+SELECT ...
+WHERE NOT EXISTS (...);
+...
+COMMIT;
+
+10. Account for the requests ID sequence after restoring explicit IDs.
+
+Ensure the sequence remains above the maximum current/restored ID.
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT:
+- roll back the full production database
+- delete current users
+- overwrite the current five requests
+- overwrite newer notifications
+- restore from the old Replit database without validating it against an actual Supabase backup
+- execute recovery inserts without explicit approval
+
+==================================================
+FINAL REPORT
+==================================================
+
+Report separately:
+
+PHASE 1:
+- root deletion vulnerabilities fixed
+- files changed
+- database migration
+- test results
+- new commit SHA
+- whether Render deployment is required
+
+PHASE 2:
+- backup/PITR availability
+- recovery snapshot time
+- number of missing requests identified
+- missing request IDs
+- whether all owners still exist
+- proposed recovery SQL
+- risks
+- confirmation nothing was restored yet
+
+STOP before executing the recovery SQL.

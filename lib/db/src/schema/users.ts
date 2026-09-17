@@ -10,6 +10,7 @@ export const usersTable = pgTable("users", {
   userType: text("user_type").notNull().default("customer"),
   roles: text("roles"),                                         // JSON: string[] e.g. ["customer","helper"]
   area: text("area"),
+  // Existing average rating. New rating counts are computed from helper_ratings.
   rating: real("rating"),
   isVerified: boolean("is_verified").notNull().default(false),
   isBlocked: boolean("is_blocked").notNull().default(false),
@@ -26,6 +27,9 @@ export const usersTable = pgTable("users", {
   helperActivationCodeCreatedAt: timestamp("helper_activation_code_created_at", { withTimezone: true }),
   helperActivationCodeUsedAt: timestamp("helper_activation_code_used_at", { withTimezone: true }),
   helperActivationCodeActive: boolean("helper_activation_code_active").notNull().default(false),
+  helperWelcomeMessageSentAt: timestamp("helper_welcome_message_sent_at", { withTimezone: true }),
+  helperWelcomeMessageLeaseId: text("helper_welcome_message_lease_id"),
+  helperWelcomeMessageLeaseExpiresAt: timestamp("helper_welcome_message_lease_expires_at", { withTimezone: true }),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({

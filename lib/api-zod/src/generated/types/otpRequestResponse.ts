@@ -5,10 +5,12 @@
  * ساعدني - API specification for the Oman help marketplace
  * OpenAPI spec version: 0.1.0
  */
+import type { OtpRequestResponseOtpDelivery } from './otpRequestResponseOtpDelivery';
 
 export interface OtpRequestResponse {
   message: string;
   otp?: string;
   isVerified?: boolean;
   isAdmin?: boolean;
+  otpDelivery?: OtpRequestResponseOtpDelivery;
 }

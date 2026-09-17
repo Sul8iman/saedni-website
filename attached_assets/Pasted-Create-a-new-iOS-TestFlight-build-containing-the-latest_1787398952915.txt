@@ -1,0 +1,215 @@
+Create a new iOS TestFlight build containing the latest Admin Users search update.
+
+The previous TestFlight build 36 is working correctly and the "Something went wrong" admin issue is FIXED.
+
+Do NOT investigate or modify that fix again.
+
+The only new feature that needs to be included in this build is:
+
+Admin → Users:
+- Search users by name
+- Search users by phone number
+- Support 8-digit Oman numbers
+- Support 968-prefixed numbers
+- Support +968-prefixed numbers
+- Support partial phone-number search
+- Keep existing helper/customer filters working together with search
+- Search placeholder:
+  "ابحث بالاسم أو رقم الهاتف"
+
+==================================================
+1. VERIFY THE SEARCH UPDATE
+==================================================
+
+Before building, verify that the latest:
+
+Sul8iman/saedni
+main
+
+contains the Admin Users search update you just implemented.
+
+Confirm the exact feature commit SHA.
+
+Do not rewrite or reimplement the search if it is already committed correctly.
+
+Verify that:
+
+- Name search works
+- 98584898-style search works
+- 96898584898-style search works
+- +96898584898-style search works
+- Partial search such as 9858 works
+- Helper/customer filters still work with search
+
+==================================================
+2. PRESERVE BUILD 36 FUNCTIONALITY
+==================================================
+
+The previous TestFlight build 36 is confirmed working.
+
+Preserve all of its functionality.
+
+In particular, do NOT modify:
+
+- Admin login/session fix
+- Admin dashboard
+- "Something went wrong" fix
+- WhatsApp OTP
+- Helper automatic activation
+- saedni_helper_welcome
+- Customer OTP
+- RTL
+- ArabicText
+- ArabicTextInput
+- I18nManager
+
+The new build should effectively be:
+
+Build 36
++
+Admin Users name/phone search update
+
+==================================================
+3. BUILD NUMBER
+==================================================
+
+Current working TestFlight version:
+
+Version: 1.0.8
+Build number: 36
+
+Check App Store Connect/EAS history first.
+
+Keep:
+
+Version: 1.0.8
+
+Use the next unused iOS buildNumber.
+
+If 36 is still the latest uploaded build, use:
+
+37
+
+Do not reuse an existing build number.
+
+Commit and push the build-number increment only after confirming the search feature is already present.
+
+==================================================
+4. SOURCE SAFETY
+==================================================
+
+Build ONLY from:
+
+Repository:
+Sul8iman/saedni
+
+Branch:
+main
+
+Do NOT build from:
+Sul8iman/saedni-website
+
+Do NOT copy files from another workspace/repository.
+
+Do NOT force push.
+
+Before building, report/verify that the source contains both:
+
+A. Everything from the working Build 36
+B. The new Admin Users search update
+
+==================================================
+5. CONFIG
+==================================================
+
+Confirm:
+
+Bundle identifier:
+com.saedni.app
+
+Version:
+1.0.8
+
+Production API:
+saedni.onrender.com
+
+Confirm production API health:
+
+/api/healthz
+
+==================================================
+6. PRE-BUILD CHECKS
+==================================================
+
+Run:
+
+pnpm install --frozen-lockfile
+
+Run the mobile TypeScript check.
+
+Do not make unrelated fixes unless they are genuinely required to build the exact current source.
+
+Do not run/commit unrelated Expo prebuild changes.
+
+==================================================
+7. CREATE TESTFLIGHT BUILD
+==================================================
+
+Run:
+
+eas build --platform ios --profile production --clear-cache
+
+Wait until the build is FINISHED.
+
+Record the exact EAS Build ID.
+
+==================================================
+8. SUBMIT THE EXACT BUILD
+==================================================
+
+After successful build:
+
+eas submit --platform ios --id <NEW_EAS_BUILD_ID>
+
+Upload it to App Store Connect / TestFlight.
+
+Do NOT submit it for App Store Review.
+
+Wait until the TestFlight/App Store Connect upload succeeds.
+
+==================================================
+9. FINAL REPORT
+==================================================
+
+Report:
+
+- Search feature commit SHA
+- Final build commit SHA
+- Version
+- iOS buildNumber
+- EAS Build ID
+- Build status
+- Submission ID
+- App Store Connect/TestFlight upload status
+
+Explicitly confirm that the new build contains:
+
+✓ Working admin login from Build 36
+✓ No "Something went wrong" regression
+✓ Admin Users search by name
+✓ Admin Users search by 8-digit phone number
+✓ Search with 968 prefix
+✓ Search with +968 prefix
+✓ Partial phone-number search
+✓ Existing helper/customer filters
+✓ Existing WhatsApp helper OTP activation
+✓ Existing saedni_helper_welcome flow
+
+Also confirm:
+
+- No RTL changes
+- No unnecessary backend changes
+- saedni-website untouched
+- No App Store Review submission
+
+STOP after successfully uploading the new build to TestFlight.

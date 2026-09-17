@@ -22,6 +22,18 @@ export interface HelpRequest {
   scheduledDateTime?: string | null;
   offeredAmount: number;
   status: HelpRequestStatus;
+  /** @nullable */
+  helpCompleted?: boolean | null;
+  /** @nullable */
+  completedHelperId?: number | null;
+  /** @nullable */
+  completedAt?: string | null;
+  /** @nullable */
+  deletedAt?: string | null;
+  /** @nullable */
+  deletedByUserId?: number | null;
+  /** @nullable */
+  deletedReason?: string | null;
   createdAt: string;
   /** @nullable */
   customerName?: string | null;

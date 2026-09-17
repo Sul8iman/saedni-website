@@ -87,7 +87,7 @@ function UserDetail({ userId, onBack }: { userId: number; onBack: () => void }) 
   const handleGenerateOtp = () => {
     if (!user) return;
     loginMutation.mutate(
-      { data: { phone: user.phone, userType: user.userType === "helper" ? "helper" : "customer" } },
+      { data: { phone: user.phone } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetUserQueryKey(userId) });
@@ -111,7 +111,7 @@ function UserDetail({ userId, onBack }: { userId: number; onBack: () => void }) 
     }
 
     deleteMutation.mutate(
-      { id: user.id, data: { confirmation: "حذف" } },
+      { id: user.id },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });

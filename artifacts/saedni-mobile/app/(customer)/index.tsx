@@ -8,12 +8,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { useQueryClient } from "@tanstack/react-query";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useColors } from "@/hooks/useColors";
-import { useAuth } from "@/contexts/AuthContext";
+import { getAuthHeaders, useAuth } from "@/contexts/AuthContext";
 import { CATEGORIES, AREAS } from "@/constants/categories";
 import type { CategoryValue } from "@/constants/categories";
 import ArabicText from "@/components/ArabicText";
+import CategoryIcon from "@/components/CategoryIcon";
+import { mergeRequestsById, requestQueryKeys } from "@/lib/request-query-keys";
 
 const BASE = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
 
@@ -33,7 +36,8 @@ function formatTime(d: Date) {
 export default function CustomerHomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
+  const queryClient = useQueryClient();
   const isBlocked = user?.isBlocked || user?.isActive === false;
 
   const [category, setCategory] = useState<CategoryValue | "">("");
@@ -101,7 +105,7 @@ export default function CustomerHomeScreen() {
       }
       const res = await fetch(`${BASE}/api/requests`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...(await getAuthHeaders()), "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           customerId: user.id, category, details, timeType, area,
@@ -114,6 +118,23 @@ export default function CustomerHomeScreen() {
         Alert.alert("خطأ", d.error || "فشل نشر الطلب");
         return;
       }
+      const createdRequest = await res.json() as {
+        id: number;
+        createdAt?: string;
+        [key: string]: unknown;
+      };
+      const customerListKey = requestQueryKeys.customer(
+        user.id,
+        activeRole ?? user.userType,
+      );
+      queryClient.setQueryData(customerListKey, (current: unknown) => {
+        const existing = Array.isArray(current)
+          ? current as Array<typeof createdRequest>
+          : [];
+        return mergeRequestsById(existing, [createdRequest]);
+      });
+      await queryClient.invalidateQueries({ queryKey: ["my-requests", user.id] });
+      await queryClient.invalidateQueries({ queryKey: ["available-requests"] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSubmitted(true);
       setCategory(""); setDetails(""); setArea(""); setAmount("");
@@ -182,8 +203,8 @@ export default function CustomerHomeScreen() {
                   disabled={!!isBlocked}
                 >
                   <View style={[s.catIconWrap, category === cat.value && s.catIconWrapActive]}>
-                    <Ionicons
-                      name={cat.icon as any}
+                    <CategoryIcon
+                      name={cat.icon}
                       size={26}
                       color={category === cat.value ? colors.primary : colors.mutedForeground}
                     />

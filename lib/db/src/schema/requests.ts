@@ -1,6 +1,7 @@
-import { pgTable, text, serial, timestamp, integer, real, boolean } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, real, serial, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 export const requestsTable = pgTable("requests", {
   id: serial("id").primaryKey(),
@@ -15,12 +16,21 @@ export const requestsTable = pgTable("requests", {
   status: text("status").notNull().default("available"),
   helpCompleted: boolean("help_completed"),                               // true/false/null (null = no feedback yet)
   completedAt: timestamp("completed_at", { withTimezone: true }),        // when customer pressed إنهاء الطلب
+  completedHelperId: integer("completed_helper_id").references(() => usersTable.id, {
+    onDelete: "restrict",
+  }),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  deletedByUserId: integer("deleted_by_user_id"),
+  deletedReason: text("deleted_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertRequestSchema = createInsertSchema(requestsTable).omit({
   id: true,
   createdAt: true,
+  deletedAt: true,
+  deletedByUserId: true,
+  deletedReason: true,
 });
 
 export type InsertRequest = z.infer<typeof insertRequestSchema>;

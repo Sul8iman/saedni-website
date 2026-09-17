@@ -1,0 +1,51 @@
+The database has now been confirmed as PRODUCTION.
+
+Stop all tests, migrations, registrations, cleanup actions, and database writes immediately. Treat this as a limited production test-data incident.
+
+Known production effects:
+
+- Test user 539 was created and soft-deactivated.
+- Test user 540 was created and soft-deactivated.
+- Notification 774 was generated.
+- Notification 775 was generated.
+- Two WhatsApp OTP deliveries were triggered.
+- No known requests, contacts, or ratings were created.
+
+Do not delete or modify these records yet.
+
+Next, perform read-only investigation only:
+
+1. Verify the current state of users 539 and 540.
+2. Identify every related row referencing either user.
+3. Inspect notifications 774 and 775.
+4. Check for OTP, message, audit, session, token, device, analytics, and notification-delivery records related to the two users.
+5. Confirm whether any asynchronous jobs are still pending.
+6. Confirm that neither account can authenticate.
+7. Confirm that neither account has active helper visibility or notifications.
+8. Report table names and record IDs only; redact phone numbers, OTP values, tokens, passwords, and personal data.
+9. Prepare an exact cleanup plan and SQL script based on the real foreign-key relationships.
+10. Do not execute the cleanup SQL.
+
+The cleanup plan must:
+
+- Target only users 539 and 540 and their verified test-related records.
+- Include notifications 774 and 775 where appropriate.
+- Preserve required audit/security evidence.
+- Run inside a transaction.
+- Verify exact target counts before deletion.
+- Abort if unexpected related records are found.
+- Include post-cleanup verification queries.
+- Include a rollback approach or backup requirement.
+
+Also prepare an environment-separation plan:
+
+- Production must continue using its current protected production secret.
+- Development and authenticated integration tests must use a separate disposable Supabase project.
+- Do not overwrite the production deployment secret.
+- Do not copy production data into the disposable database.
+- Do not expose or print any credentials.
+- Add a startup safety check that prevents test commands from running when the database environment is production.
+
+Do not execute cleanup, create a development database, rotate credentials, deploy code, merge the branch, run the production migration, or start TestFlight work without explicit approval.
+
+Report the read-only findings and proposed cleanup plan first.

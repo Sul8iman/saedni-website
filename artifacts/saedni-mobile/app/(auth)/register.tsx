@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, Linking,
+  ActivityIndicator, Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -10,6 +10,7 @@ import * as Haptics from "expo-haptics";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, type AuthUser } from "@/contexts/AuthContext";
+import { AREAS } from "@/constants/categories";
 
 type Step = "form" | "otp";
 type UserType = "customer" | "helper";
@@ -28,12 +29,28 @@ export default function RegisterScreen() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [userType, setUserType] = useState<UserType>("customer");
+  const [customerArea, setCustomerArea] = useState("");
+  const [helperAreas, setHelperAreas] = useState<string[]>([]);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  function toggleHelperArea(area: string) {
+    setHelperAreas((current) => current.includes(area)
+      ? current.filter((item) => item !== area)
+      : [...current, area]);
+  }
+
   async function handleRegister() {
     if (!name.trim() || !phone.trim()) return;
+    if (userType === "customer" && !customerArea) {
+      Alert.alert("المنطقة مطلوبة", "اختر منطقتك للمتابعة");
+      return;
+    }
+    if (userType === "helper" && helperAreas.length === 0) {
+      Alert.alert("مناطق الخدمة مطلوبة", "اختر منطقة خدمة واحدة على الأقل");
+      return;
+    }
     if (!termsAccepted) {
       Alert.alert("الشروط والأحكام", "يرجى الموافقة على الشروط والأحكام أولاً");
       return;
@@ -45,7 +62,12 @@ export default function RegisterScreen() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), userType }),
+          body: JSON.stringify({
+            name: name.trim(),
+            phone: phone.trim(),
+            userType,
+            ...(userType === "customer" ? { area: customerArea } : { preferredAreas: helperAreas }),
+          }),
       });
       const data = await res.json();
       if (!res.ok) { Alert.alert("خطأ", data.error || "فشل التسجيل"); return; }
@@ -88,13 +110,10 @@ export default function RegisterScreen() {
     finally { setLoading(false); }
   }
 
-  function openWhatsApp() {
-    Linking.openURL(
-      `https://wa.me/96892771450?text=${encodeURIComponent("مرحباً، قمت بإنشاء حساب جديد في تطبيق ساعدني وأحتاج رمز التحقق")}`
-    );
-  }
-
-  const canSubmit = !!name.trim() && !!phone.trim() && termsAccepted;
+  const canSubmit = !!name.trim()
+    && !!phone.trim()
+    && termsAccepted
+    && (userType === "customer" ? !!customerArea : helperAreas.length > 0);
   const s = makeStyles(colors);
 
   return (
@@ -114,9 +133,7 @@ export default function RegisterScreen() {
           <Text style={s.tagline}>
             {step === "form"
             ? "انضم إلى ساعدني اليوم"
-            : userType === "customer"
-              ? "أدخل رمز التحقق من واتساب"
-              : "تواصل مع الإدارة للتفعيل"}
+            : "أدخل رمز التحقق من واتساب"}
           </Text>
         </View>
 
@@ -172,6 +189,27 @@ export default function RegisterScreen() {
                 onSubmitEditing={handleRegister}
               />
 
+              <Text style={s.fieldLabel}>
+                {userType === "customer" ? "منطقتك" : "مناطق الخدمة"}
+              </Text>
+              <View style={s.areaWrap}>
+                {AREAS.map((area) => {
+                  const selected = userType === "customer"
+                    ? customerArea === area
+                    : helperAreas.includes(area);
+                  return (
+                    <TouchableOpacity
+                      key={area}
+                      style={[s.areaChip, selected && s.areaChipSelected]}
+                      onPress={() => userType === "customer" ? setCustomerArea(area) : toggleHelperArea(area)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[s.areaChipTxt, selected && s.areaChipTxtSelected]}>{area}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
               {/* Terms & Conditions checkbox */}
               <TouchableOpacity
                 style={s.termsRow}
@@ -218,27 +256,10 @@ export default function RegisterScreen() {
 
           {step === "otp" && (
             <>
-              {userType === "customer" ? (
-                // Customer: OTP sent automatically via WhatsApp
-                <View style={s.waInfoBox}>
-                  <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
-                  <Text style={s.waInfoTxt}>أدخل رمز التحقق المرسل إلى رقم واتساب المسجل.</Text>
-                </View>
-              ) : (
-                // Helper: manual activation via admin
-                <>
-                  <View style={s.successBox}>
-                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                    <Text style={s.successTxt}>
-                      يرجى التواصل مع الإدارة للحصول على رمز التفعيل.
-                    </Text>
-                  </View>
-                  <TouchableOpacity style={s.waBtn} onPress={openWhatsApp} activeOpacity={0.85}>
-                    <Ionicons name="logo-whatsapp" size={20} color="#fff" />
-                    <Text style={s.waBtnTxt}>تواصل مع الإدارة</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+              <View style={s.waInfoBox}>
+                <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                <Text style={s.waInfoTxt}>أدخل رمز التحقق المرسل إلى رقم واتساب المسجل.</Text>
+              </View>
               <Text style={s.fieldLabel}>رمز التحقق</Text>
               <TextInput
                 style={[s.input, s.otpInput]}
@@ -317,6 +338,14 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
     roleLabelActive: { color: c.primary },
     roleHint: { fontSize: 11, color: c.mutedForeground, textAlign: "center" },
     roleHintActive: { color: c.secondaryForeground },
+    areaWrap: { flexDirection: "row-reverse", flexWrap: "wrap", gap: 8, marginBottom: 18 },
+    areaChip: {
+      borderWidth: 1.5, borderColor: c.border, borderRadius: 18,
+      paddingHorizontal: 12, paddingVertical: 7, backgroundColor: c.background,
+    },
+    areaChipSelected: { borderColor: c.primary, backgroundColor: c.primary },
+    areaChipTxt: { fontSize: 12, color: c.mutedForeground, fontWeight: "600" },
+    areaChipTxtSelected: { color: c.primaryForeground },
 
     // Terms checkbox
     termsRow: {
@@ -342,12 +371,6 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
     ghostBtn: { alignItems: "center", paddingVertical: 10 },
     ghostTxt: { fontSize: 14, color: c.mutedForeground, textAlign: "center" },
     ghostLink: { color: c.primary, fontWeight: "700" },
-    waBtn: {
-      backgroundColor: "#25D366", borderRadius: 12, paddingVertical: 13,
-      flexDirection: "row-reverse", alignItems: "center", justifyContent: "center",
-      gap: 10, marginBottom: 16,
-    },
-    waBtnTxt: { color: "#fff", fontSize: 14, fontWeight: "700" },
     waInfoBox: {
       flexDirection: "row-reverse", alignItems: "center", gap: 8,
       backgroundColor: "#F0FDF4", borderRadius: 10, padding: 12,
@@ -355,12 +378,4 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
       marginBottom: 16,
     },
     waInfoTxt: { color: "#166534", fontSize: 13, textAlign: "right", flex: 1, lineHeight: 18 },
-    successBox: {
-      backgroundColor: c.secondary, borderRadius: 12, padding: 14,
-      flexDirection: "row-reverse", alignItems: "flex-start", gap: 10, marginBottom: 16,
-    },
-    successTxt: {
-      color: c.secondaryForeground, fontSize: 13, textAlign: "right",
-      flex: 1, lineHeight: 20,
-    },
   });

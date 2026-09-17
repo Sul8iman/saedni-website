@@ -1,0 +1,253 @@
+URGENT PRODUCTION DATA INVESTIGATION — DO NOT MODIFY OR DELETE ANY DATA.
+
+Saedni admin dashboard previously showed:
+
+Users: 284
+Customers: 51
+Helpers: 232
+
+Requests: 24
+Active: 14
+Finished: 10
+
+Now it suddenly shows:
+
+Users: 286
+Customers: 52
+Helpers: 233
+
+Requests: 5
+Active: 0
+Finished: 5
+
+Exactly 19 requests disappeared from the admin dashboard.
+
+This happened after the recent backend/admin-notification updates.
+
+STOP all feature work.
+
+==================================================
+CRITICAL SAFETY RULES
+==================================================
+
+DO NOT:
+- delete any user
+- delete any request
+- create test users
+- create test requests
+- modify request statuses
+- run destructive migrations
+- truncate tables
+- reset Supabase
+- restore anything yet
+- deploy anything yet
+
+This investigation must initially be READ-ONLY.
+
+We need to determine whether the 19 requests:
+
+A. still exist in Supabase but are hidden by the API/query/filter,
+
+B. were actually deleted from the production database,
+
+C. are being read from a different database/schema/environment,
+
+D. became inaccessible because of a backend/schema/query regression.
+
+==================================================
+1. VERIFY PRODUCTION DATABASE
+==================================================
+
+Identify exactly which database the live Render service:
+
+https://saedni.onrender.com
+
+is connected to.
+
+Compare it with the Supabase database being inspected.
+
+Do NOT print credentials.
+
+Report only safe identifiers such as:
+- database host/project reference if safe
+- schema
+- environment variable name used
+- whether Render and the inspected Supabase DB are definitely the same database
+
+==================================================
+2. COUNT RAW REQUEST ROWS
+==================================================
+
+Run READ-ONLY SQL directly against production Supabase.
+
+Report:
+
+SELECT COUNT(*) FROM requests;
+
+Then count by every status/result field that exists.
+
+For example, inspect the actual schema first and then report counts for fields such as:
+
+status
+is_completed
+result
+outcome
+deleted_at
+
+Do not assume field names.
+
+I need the RAW database count, independent of the API.
+
+==================================================
+3. INVESTIGATE THE MISSING 19 REQUESTS
+==================================================
+
+Determine whether the database currently contains:
+
+24 requests
+
+or
+
+5 requests.
+
+If raw DB contains 24:
+STOP.
+Do not restore anything.
+
+Trace why GET /api/requests or GET /api/admin/stats returns only 5.
+
+Compare the current request queries against the version that previously displayed:
+
+24 total
+14 active
+10 finished
+
+Inspect git history and identify the exact commit/query that changed the result.
+
+Check especially:
+- WHERE clauses
+- joins
+- inner joins
+- user joins
+- status filters
+- result filters
+- pagination
+- LIMIT
+- date filters
+- soft-delete filters
+- admin authorization changes
+- schema changes
+- request ownership filters
+
+==================================================
+4. IF RAW DATABASE CONTAINS ONLY 5
+==================================================
+
+DO NOT immediately restore.
+
+Investigate exactly how the other 19 rows disappeared.
+
+Check:
+
+- recent commits
+- migrations
+- startup schema guards
+- cascade deletes
+- foreign-key behavior
+- DELETE endpoints
+- admin delete logic
+- test scripts
+- cleanup scripts
+- production validation scripts
+- any recent automated tests that accidentally used production Supabase
+- recent server logs
+- Supabase logs/audit information if available
+
+This is especially important because recent work explicitly ran production/database checks.
+
+Determine whether any test/cleanup command could have deleted production request rows.
+
+==================================================
+5. GIT REGRESSION ANALYSIS
+==================================================
+
+Compare request-related backend behavior before and after recent commits, especially around:
+
+123eb83
+9f595b1
+635f39b
+e3e8424
+
+Inspect all changes affecting:
+
+artifacts/api-server/src/routes/requests.ts
+artifacts/api-server/src/routes/admin.ts
+artifacts/api-server/src/app.ts
+database schema/migrations
+test scripts
+
+Also inspect any commit between these SHAs.
+
+Report the first commit capable of causing the disappearance.
+
+==================================================
+6. DATABASE RECOVERY OPTIONS
+==================================================
+
+If the 19 rows were actually deleted, determine BEFORE restoring:
+
+- whether Supabase backups are available
+- whether Point-in-Time Recovery is enabled
+- oldest available backup
+- whether deleted request rows can be recovered without overwriting current users/new data
+- whether SQL/logical recovery of only the missing requests is possible
+
+DO NOT execute a restore.
+
+Give me the safest recovery plan first.
+
+We now have 2 additional users since the old screenshot, so a full database rollback could destroy new data and must NOT be performed without explicit approval.
+
+==================================================
+7. CHECK PRODUCTION API
+==================================================
+
+READ-ONLY checks only.
+
+Compare:
+
+raw Supabase request count
+
+vs
+
+GET /api/requests
+
+vs
+
+GET /api/admin/stats
+
+Explain exactly why each count is what it is.
+
+==================================================
+8. FINAL REPORT — BEFORE ANY FIX
+==================================================
+
+Do not modify code or database until you report:
+
+1. Raw production requests count
+2. Raw active count
+3. Raw finished count
+4. Whether the missing 19 rows still physically exist
+5. Whether Render is connected to the expected Supabase database
+6. API request count
+7. Admin stats count
+8. Exact root cause
+9. Exact commit/change responsible, if identifiable
+10. Whether any recent test/cleanup touched production data
+11. Whether recovery is necessary
+12. Safest recovery method if necessary
+13. Whether any current/new data would be at risk
+
+STOP AFTER THE INVESTIGATION.
+
+Do not fix, restore, deploy, migrate, or create an EAS build until I explicitly approve the recovery/fix.

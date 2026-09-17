@@ -1,0 +1,86 @@
+Proceed with the smallest safe deleted-account implementation.
+
+Do not reuse `isBlocked` as the deletion state.
+
+## Database changes
+
+Prepare an additive migration that:
+
+1. Adds to users:
+   deleted_at timestamptz NULL
+
+2. Creates account_deletion_audit with:
+   - id
+   - deleted_user_id
+   - deleted_by_admin_id
+   - deletion_mode
+   - created_at
+
+The audit must not contain the user’s phone number, OTP, auth token, or other unnecessary personal data.
+
+Preserve all historical requests, contacts, ratings, and lifecycle records. Do not add cascade deletion from users.
+
+## Account behavior
+
+Disabled account:
+
+- `isBlocked = true`
+- `deleted_at IS NULL`
+- Can be re-enabled by an admin.
+
+Deleted account:
+
+- `deleted_at IS NOT NULL`
+- Cannot be reactivated through the normal enable action.
+- Cannot log in, request OTP, verify OTP, use an existing token, or access `/auth/me`.
+- Must be excluded from normal user lists and user statistics.
+- Historical records must display “حساب محذوف”.
+
+## Delete operation
+
+When an admin confirms deletion:
+
+- Set `deleted_at`.
+- Set `isBlocked = true`.
+- Set `isVerified = false`.
+- Clear auth token and OTP fields.
+- Disable helper activation.
+- Anonymize the user’s name and phone while preserving database uniqueness.
+- Preserve historical requests, contacts and ratings.
+- Do not archive, complete, delete, or requeue requests automatically unless that behavior is separately approved.
+- Record the action in `account_deletion_audit`.
+- Perform the operation transactionally.
+- Prevent administrators from deleting their own current account.
+
+## Mobile interface
+
+In the authenticated iPhone admin user profile, display two distinct actions:
+
+- تعطيل الحساب / تفعيل الحساب
+- حذف الحساب
+
+Use a red destructive style for deletion and require typing:
+
+حذف
+
+The two actions must call separate endpoints and must never execute the same operation.
+
+## Testing
+
+Implement and test against the isolated development database only.
+
+Verify:
+
+- Disable remains reversible.
+- Delete is not reversible through the enable button.
+- Deleted users cannot authenticate through any path.
+- Historical records remain intact.
+- Deleted accounts disappear from normal user lists and counts.
+- Admin cannot delete themselves.
+- Non-admin access is rejected.
+- Duplicate deletion is rejected safely.
+- No request is archived, deleted, completed, or requeued as a side effect.
+
+Run migration rollback testing, API tests, mobile/API typechecks, and verify the actual iPhone screen.
+
+Do not apply the migration to production and do not create the iOS build yet. Provide the exact migration SQL, rollback plan, changed files, and test results for approval first.

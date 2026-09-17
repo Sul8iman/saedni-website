@@ -1,0 +1,235 @@
+Add admin notifications for key production events in Saedni.
+
+Repository:
+Sul8iman/saedni
+
+Branch:
+main
+
+Goal:
+The admin should receive a notification whenever any of these events happens:
+
+1. New customer registered
+2. New helper registered
+3. New help request created
+
+==================================================
+NOTIFICATION EVENTS
+==================================================
+
+A. NEW CUSTOMER
+
+When a brand-new customer account is successfully created, create/send an admin notification:
+
+Title:
+عميل جديد
+
+Body:
+تم تسجيل عميل جديد في ساعدني.
+
+If safe and already available, include the customer's name in the notification body, for example:
+
+تم تسجيل عميل جديد: أحمد
+
+Do NOT include OTP, password, tokens, or unnecessary private information.
+
+Do not send this notification on every login.
+Send it only when a new customer account is created for the first time.
+
+==================================================
+B. NEW HELPER
+==================================================
+
+When a brand-new helper account is successfully created, create/send an admin notification:
+
+Title:
+مساعد جديد
+
+Body:
+تم تسجيل مساعد جديد في ساعدني.
+
+If safe and already available, include the helper name:
+
+تم تسجيل مساعد جديد: محمد
+
+Important:
+This notification should be about registration only.
+
+Do not duplicate it when:
+- helper verifies OTP
+- helper logs in
+- saedni_helper_welcome is sent
+- admin generates an emergency activation code
+
+Only one "new helper" notification per newly created helper account.
+
+==================================================
+C. NEW REQUEST
+==================================================
+
+Whenever a new help request is successfully created:
+
+Title:
+طلب جديد
+
+Body:
+تم نشر طلب جديد في ساعدني.
+
+If useful, include:
+- request category
+- area
+
+Example:
+
+طلب جديد: نقل وتحميل - بوشر
+
+Do NOT expose unnecessary personal information in the push notification.
+
+==================================================
+ADMIN NOTIFICATION DESTINATIONS
+==================================================
+
+Use the existing admin notification system.
+
+The event should:
+
+1. Create an admin notification record so it appears in the admin Notifications screen.
+2. Send a push notification to the admin device if an admin Expo push token is available.
+
+Do not make customer/helper registration or request creation fail if the admin push notification fails.
+
+Correct behavior:
+
+Create user/request successfully
+→ create admin notification
+→ attempt push
+→ if push fails, log safely and continue
+
+==================================================
+DUPLICATE PREVENTION
+==================================================
+
+Make sure notifications are not duplicated by:
+
+- retries
+- repeated login
+- OTP verification
+- API refresh
+- multiple app renders
+
+For customer/helper notifications, trigger only from the actual new-user creation branch.
+
+For requests, trigger only after the request is successfully inserted.
+
+==================================================
+ADMIN NOTIFICATIONS SCREEN
+==================================================
+
+Confirm the existing admin Notifications screen can display the three notification types:
+
+- عميل جديد
+- مساعد جديد
+- طلب جديد
+
+If there are existing notification-type fields, use clear values such as:
+
+new_customer
+new_helper
+new_request
+
+Do not break existing notification types.
+
+==================================================
+TESTS
+==================================================
+
+Test:
+
+1. Create a new customer:
+   - exactly one admin notification created
+   - correct title/body
+   - push attempted
+
+2. Customer logs out/in:
+   - no duplicate "new customer" notification
+
+3. Create a new helper:
+   - exactly one "مساعد جديد" notification
+
+4. Helper verifies OTP:
+   - no duplicate new-helper notification
+
+5. Helper logs in again:
+   - no duplicate
+
+6. Create a new help request:
+   - exactly one "طلب جديد" notification
+
+7. Refresh/admin dashboard:
+   - no duplicate notification created
+
+8. Simulate push failure:
+   - registration/request creation still succeeds
+   - notification record remains available in admin panel
+
+==================================================
+DO NOT MODIFY
+==================================================
+
+Do not modify:
+- RTL
+- WhatsApp OTP
+- saedni_helper_welcome
+- helper onboarding
+- admin session/authentication
+- customer OTP
+- search by name/phone
+- website
+- app version/build number
+
+==================================================
+CHECKS
+==================================================
+
+Run:
+
+pnpm install --frozen-lockfile
+
+API TypeScript check
+
+Mobile TypeScript check if any admin UI file must change
+
+Relevant backend tests
+
+==================================================
+GIT
+==================================================
+
+Push only to:
+
+Sul8iman/saedni
+main
+
+Do not push to:
+Sul8iman/saedni-website
+
+No force push.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Report:
+
+- Starting commit SHA
+- New commit SHA
+- Files changed
+- Where each notification is triggered
+- Notification types/titles/bodies
+- Whether push notifications use the existing admin push token
+- Duplicate-prevention logic
+- Test results
+- Confirmation notification failures do not block core actions
+- Confirmation no unrelated RTL/WhatsApp/auth changes were made
+
+Do not create a new EAS build yet.

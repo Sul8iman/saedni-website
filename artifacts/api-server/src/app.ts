@@ -4,14 +4,45 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import { eq, sql as drizzleSql } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
+import { assertSafeTestOutboundEnvironment } from "@workspace/db/test-safety";
 import router from "./routes";
 import { logger } from "./lib/logger";
+
+assertSafeTestOutboundEnvironment();
 
 // ── Startup schema migration — idempotent, safe to run on every boot ──────────
 (async () => {
   try {
     await db.execute(drizzleSql`ALTER TABLE users ADD COLUMN IF NOT EXISTS expo_push_token text`);
-    logger.info("Schema migration: expo_push_token column ensured");
+    await db.execute(drizzleSql`ALTER TABLE users ADD COLUMN IF NOT EXISTS helper_welcome_message_sent_at timestamptz`);
+    await db.execute(drizzleSql`ALTER TABLE users ADD COLUMN IF NOT EXISTS helper_welcome_message_lease_id text`);
+    await db.execute(drizzleSql`ALTER TABLE users ADD COLUMN IF NOT EXISTS helper_welcome_message_lease_expires_at timestamptz`);
+    await db.execute(drizzleSql`ALTER TABLE admin_notifications ADD COLUMN IF NOT EXISTS event_key text`);
+    await db.execute(drizzleSql`CREATE UNIQUE INDEX IF NOT EXISTS admin_notifications_event_key_unique ON admin_notifications(event_key)`);
+    await db.execute(drizzleSql`ALTER TABLE requests ADD COLUMN IF NOT EXISTS deleted_at timestamptz`);
+    await db.execute(drizzleSql`ALTER TABLE requests ADD COLUMN IF NOT EXISTS deleted_by_user_id integer`);
+    await db.execute(drizzleSql`ALTER TABLE requests ADD COLUMN IF NOT EXISTS deleted_reason text`);
+    await db.execute(drizzleSql`
+      CREATE TABLE IF NOT EXISTS request_lifecycle_events (
+        id serial PRIMARY KEY,
+        request_id integer NOT NULL,
+        action text NOT NULL,
+        actor_user_id integer,
+        actor_role text,
+        reason text,
+        metadata text,
+        created_at timestamptz NOT NULL DEFAULT now()
+      )
+    `);
+    await db.execute(drizzleSql`
+      CREATE INDEX IF NOT EXISTS request_lifecycle_events_request_created_at_idx
+      ON request_lifecycle_events(request_id, created_at)
+    `);
+    await db.execute(drizzleSql`
+      CREATE INDEX IF NOT EXISTS requests_active_created_at_idx
+      ON requests(created_at) WHERE deleted_at IS NULL
+    `);
+    logger.info("Schema migration: runtime columns ensured");
   } catch (err) {
     logger.warn({ err }, "Schema migration check failed (non-fatal)");
   }
@@ -50,7 +81,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.SESSION_SECRET ?? "saidni_secret"));
 
-// Simple in-memory session store (MVP — replaced by token auth for mobile)
+// Simple in-memory session store. Bearer tokens are preferred for mobile, but
+// the signed cookie keeps already-installed clients working while they upgrade.
 const sessions: Record<string, { userId?: number }> = {};
 
 // Token-based auth middleware — reads Authorization: Bearer <token> header
@@ -77,8 +109,10 @@ app.use(async (req, _res, next) => {
   next();
 });
 
-// Session middleware — token auth takes priority over cookie sessions
-app.use((req, _res, next) => {
+// Session middleware — token auth takes priority over cookie sessions.
+// Persist newly-created sessions so legacy mobile clients that use cookies can
+// still access protected admin routes after a successful PIN login.
+app.use((req, res, next) => {
   const tokenUserId = (req as any)._tokenUserId;
   if (tokenUserId != null) {
     (req as any).session = { userId: tokenUserId };
@@ -94,6 +128,14 @@ app.use((req, _res, next) => {
     sessions[newSid] = {};
     (req as any).session = sessions[newSid];
     (req as any).sessionId = newSid;
+    const isProduction = process.env.NODE_ENV === "production";
+    res.cookie("sid", newSid, {
+      httpOnly: true,
+      signed: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
   }
   next();
 });

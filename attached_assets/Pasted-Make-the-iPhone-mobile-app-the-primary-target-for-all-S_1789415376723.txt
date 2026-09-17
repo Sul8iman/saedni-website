@@ -1,0 +1,77 @@
+Make the iPhone mobile app the primary target for all Saedni updates. Do not consider a feature complete merely because it exists in the web interface.
+
+Current issue:
+The area filter appears in the web admin interface, but it does not appear in the mobile iPhone admin interface.
+
+Required implementation:
+
+1. Add the area filter to the Admin Users Management screen inside the Saedni iOS/mobile app.
+2. The filter must work for both:
+
+   * Helpers
+   * Customers
+3. Load the 16 active Muscat areas from `GET /api/service-areas`:
+
+   * مسقط
+   * بوشر
+   * الخوير
+   * الغبرة
+   * الموالح
+   * السيب
+   * العامرات
+   * المعبيلة
+   * الخوض
+   * الأنصب
+   * العذيبة
+   * القرم
+   * غلا
+   * روي
+   * مطرح
+   * قريات
+4. Include these options:
+
+   * جميع المناطق
+   * بدون منطقة محددة
+   * Select one or multiple areas
+5. Multiple selected areas must use OR logic.
+6. Helpers must be filtered using all values in `preferred_areas`.
+7. Customers must be filtered using their primary `area`.
+8. Display every customer’s area and every helper’s selected service areas on their mobile admin user card/details.
+9. Preserve the existing filters:
+
+   * Search by name or phone
+   * Account type
+   * Active/blocked status
+   * Pagination
+10. Filtering must be performed through the existing backend `GET /api/users` endpoint, not locally on the currently loaded results.
+11. Maintain the Arabic RTL interface and the current Saedni visual identity.
+12. Ensure the filter sheet/dropdown works correctly on different iPhone screen sizes.
+13. Reuse the existing backend and web-filter implementation whenever possible.
+14. Do not modify the database schema or production data.
+15. Do not change the existing web filter unless fixing shared code is technically necessary.
+16. Do not make unrelated changes.
+
+Important release rule:
+The iPhone mobile application is the primary product. From now on, every requested user-facing or admin feature must be checked and implemented in the iPhone app first. Web implementation is supplementary unless explicitly requested otherwise.
+
+Verification required:
+
+* Confirm the filter is visible in the iPhone admin Users Management screen.
+* Test helpers using one and multiple service areas.
+* Test customers using their primary area.
+* Test “جميع المناطق”.
+* Test “بدون منطقة محددة”.
+* Confirm users matching multiple selected areas appear only once.
+* Confirm search, account type, status, and pagination continue to work with the area filter.
+* Run mobile and API typechecks and all relevant tests.
+* Produce screenshots or preview evidence from the actual mobile admin screen.
+
+Release:
+
+* Update the iOS build number to the next unused number. If build 38 has already been created or uploaded, use build 39.
+* Create a new production iOS build using Replit Expo Launch.
+* Upload the completed build to the existing Saedni app in TestFlight.
+* Keep version `1.0.9` unless Apple requires a version change.
+* Keep bundle ID `com.saedni.app`.
+* Do not create a new Apple App Store listing.
+* Report the final iOS build number, build status, upload status, and TestFlight processing status.

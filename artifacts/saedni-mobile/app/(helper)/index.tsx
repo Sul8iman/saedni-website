@@ -1,15 +1,17 @@
 import React, { useState } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  ActivityIndicator, RefreshControl, Linking, ScrollView,
+  ActivityIndicator, RefreshControl, Linking, ScrollView, Alert,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
+import { useFocusEffect } from "expo-router";
 import { useColors } from "@/hooks/useColors";
-import { useAuth } from "@/contexts/AuthContext";
+import { getAuthHeaders, useAuth } from "@/contexts/AuthContext";
 import { CATEGORIES, AREAS } from "@/constants/categories";
 import { useHelperPushRegistration } from "@/hooks/usePushNotifications";
+import { requestQueryKeys } from "@/lib/request-query-keys";
 
 const BASE = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
 
@@ -78,7 +80,7 @@ function openCall(phone: string) {
 export default function HelperRequestsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
   const isBlocked = user?.isBlocked || user?.isActive === false;
 
   // Register for push notifications once when the helper is active
@@ -86,22 +88,58 @@ export default function HelperRequestsScreen() {
 
   const [catFilter, setCatFilter] = useState("all");
   const [areaFilter, setAreaFilter] = useState("all");
+  const [contactingId, setContactingId] = useState<number | null>(null);
+  const roleKey = activeRole ?? user?.userType ?? "helper";
+
+  async function contactAndOpen(item: HelpRequest, method: "phone" | "whatsapp") {
+    if (!item.customerPhone) {
+      Alert.alert("تعذر التواصل", "رقم العميل غير متوفر لهذا الطلب");
+      return;
+    }
+    setContactingId(item.id);
+    try {
+      const response = await fetch(`${BASE}/api/requests/${item.id}/contact`, {
+        method: "POST",
+        credentials: "include",
+        headers: { ...(await getAuthHeaders()), "Content-Type": "application/json" },
+        body: JSON.stringify({ contactMethod: method }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(typeof body?.error === "string" ? body.error : "تعذر تسجيل التواصل");
+      }
+      if (method === "whatsapp") openWhatsApp(item.customerPhone);
+      else openCall(item.customerPhone);
+    } catch (error) {
+      Alert.alert("تعذر التواصل", error instanceof Error ? error.message : "حاول مرة أخرى");
+    } finally {
+      setContactingId(null);
+    }
+  }
 
   const { data: allData, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["available-requests"],
+    queryKey: requestQueryKeys.helperAvailable(user?.id ?? 0, roleKey, areaFilter, catFilter),
     queryFn: async () => {
-      const r = await fetch(`${BASE}/api/requests?status=available`, { credentials: "include" });
+      const query = new URLSearchParams({ status: "available" });
+      if (catFilter !== "all") query.set("category", catFilter);
+      if (areaFilter !== "all") query.set("area", areaFilter);
+      const r = await fetch(`${BASE}/api/requests?${query.toString()}`, {
+        credentials: "include",
+        headers: await getAuthHeaders(),
+      });
+      if (!r.ok) throw new Error("تعذر تحميل الطلبات");
       return r.json() as Promise<HelpRequest[]>;
     },
-    enabled: !isBlocked,
+    enabled: !!user && !isBlocked && roleKey === "helper",
   });
 
-  // Client-side dual filter
-  const data = (allData ?? []).filter(item => {
-    const catMatch = catFilter === "all" || item.category === catFilter;
-    const areaMatch = areaFilter === "all" || item.area === areaFilter;
-    return catMatch && areaMatch;
-  });
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user && !isBlocked) void refetch();
+    }, [isBlocked, refetch, user]),
+  );
+
+  const data = allData ?? [];
 
   const catLabel = (v: string) => CATEGORIES.find(c => c.value === v)?.label ?? v;
   const s = makeStyles(colors, insets.bottom);
@@ -192,18 +230,18 @@ export default function HelperRequestsScreen() {
       <View style={s.actions}>
         <TouchableOpacity
           style={[s.waBtn, !item.customerPhone && s.btnDisabled]}
-          onPress={() => item.customerPhone && openWhatsApp(item.customerPhone)}
+          onPress={() => contactAndOpen(item, "whatsapp")}
           activeOpacity={0.85}
-          disabled={!item.customerPhone}
+          disabled={!item.customerPhone || contactingId === item.id}
         >
           <Ionicons name="logo-whatsapp" size={18} color="#fff" />
           <Text style={s.waBtnTxt}>مراسلة</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[s.callBtn, !item.customerPhone && s.btnDisabled]}
-          onPress={() => item.customerPhone && openCall(item.customerPhone)}
+          onPress={() => contactAndOpen(item, "phone")}
           activeOpacity={0.85}
-          disabled={!item.customerPhone}
+          disabled={!item.customerPhone || contactingId === item.id}
         >
           <Ionicons name="call-outline" size={18} color={colors.primary} />
           <Text style={s.callBtnTxt}>اتصال</Text>

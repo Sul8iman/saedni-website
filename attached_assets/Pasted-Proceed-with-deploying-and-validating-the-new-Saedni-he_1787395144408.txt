@@ -1,0 +1,223 @@
+Proceed with deploying and validating the new Saedni helper onboarding flow.
+
+Current application repository:
+Sul8iman/saedni
+Branch: main
+Commit containing the new helper onboarding:
+123eb83
+
+IMPORTANT:
+Do not modify saedni-website.
+Do not create a mobile build yet.
+Do not make any RTL changes.
+
+==================================================
+STEP 1 — PRODUCTION DATABASE MIGRATION
+==================================================
+
+The new API requires:
+
+008_helper_welcome_message.sql
+
+First inspect the migration and confirm it contains only the required schema changes for the helper welcome-message delivery/idempotency system.
+
+Then apply migration 008_helper_welcome_message.sql to the PRODUCTION Supabase database used by the Saedni Render API.
+
+IMPORTANT:
+- Confirm you are using the production Supabase database.
+- Do not reset the database.
+- Do not delete existing users.
+- Do not delete existing requests.
+- Do not modify unrelated tables/data.
+- Do not expose database credentials in output or logs.
+
+After migration, verify the required columns exist.
+
+Report the exact columns added.
+
+==================================================
+STEP 2 — VERIFY PRODUCTION DATABASE
+==================================================
+
+Confirm that existing production data is intact.
+
+Check counts before/after where possible for:
+- users
+- requests
+
+Do not display private user information or phone numbers.
+
+Only report counts.
+
+==================================================
+STEP 3 — VERIFY GITHUB
+==================================================
+
+Confirm:
+
+Sul8iman/saedni
+main
+
+contains commit:
+123eb83
+
+Run a remote SHA check.
+
+Do NOT push anything unless necessary.
+
+Do NOT force push.
+
+Confirm:
+Sul8iman/saedni-website was not modified.
+
+==================================================
+STEP 4 — DEPLOY API TO RENDER
+==================================================
+
+Render must deploy from:
+
+Repository:
+Sul8iman/saedni
+
+Branch:
+main
+
+Root Directory:
+artifacts/api-server
+
+Target commit:
+123eb83 or a newer legitimate Saedni commit containing the same changes.
+
+If Render auto-deploy is enabled, verify that deployment starts.
+
+If you have an existing authorized Render deployment mechanism available, deploy the latest Saedni main commit.
+
+If you do NOT have Render credentials/deploy hook, STOP and tell me to use:
+
+Render Dashboard
+→ Saedni service
+→ Manual Deploy
+→ Deploy latest commit
+
+Do NOT ask me to expose API keys unnecessarily.
+
+==================================================
+STEP 5 — VERIFY RENDER
+==================================================
+
+After deployment, confirm that Render is running the new API revision.
+
+The deployed commit must NOT still be an old commit such as:
+23be1c0
+
+It should be:
+123eb83
+
+or a newer legitimate commit containing these changes.
+
+Confirm the API starts without:
+- database errors
+- missing-column errors
+- TypeScript/runtime errors
+- WhatsApp configuration errors
+
+==================================================
+STEP 6 — PRODUCTION-SAFE TESTS
+==================================================
+
+Do NOT create fake production users or send WhatsApp messages to random numbers.
+
+Run safe checks first.
+
+Verify:
+
+1. API health is OK.
+2. Database connection is OK.
+3. New helper welcome-message columns are accessible.
+4. Admin endpoints still require authentication.
+5. Existing customer/helper data remains intact.
+6. WhatsApp template configuration uses:
+
+Template:
+saedni_helper_welcome
+
+Language:
+ar
+
+7. Confirm the template request contains NO CTA/components because the approved template already contains the channel URL.
+
+==================================================
+STEP 7 — REAL END-TO-END TEST
+==================================================
+
+Do not automatically use a random phone number.
+
+Tell me when the system is ready for the final real test.
+
+I will then register a NEW helper using a real WhatsApp number.
+
+Expected journey:
+
+إنشاء حساب كمساعد
+→ استلام OTP على واتساب
+→ إدخال OTP
+→ تفعيل الحساب مباشرة
+→ دخول ساعدني
+→ وصول رسالة saedni_helper_welcome تلقائيًا
+
+There must be NO:
+- admin activation code
+- request to contact administration
+- waiting for admin approval
+
+==================================================
+STEP 8 — WELCOME MESSAGE VALIDATION
+==================================================
+
+During the real test verify:
+
+- OTP is sent successfully.
+- Correct OTP activates helper immediately.
+- saedni_helper_welcome is sent only after successful activation.
+- Channel invitation template is sent once.
+- Logging out and back in does not resend it.
+- WhatsApp template failure would not deactivate/block the helper.
+
+==================================================
+STEP 9 — DO NOT BUILD YET
+==================================================
+
+Do NOT run:
+
+eas build
+
+Do NOT submit anything to:
+- App Store Connect
+- TestFlight
+- Google Play
+
+Wait until I confirm that the real helper registration test works correctly.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Report:
+
+1. Production migration status
+2. Columns added
+3. Users count before/after
+4. Requests count before/after
+5. GitHub Saedni main SHA
+6. Render deployed SHA
+7. API health
+8. WhatsApp template configuration
+9. Confirmation admin recovery code remains available
+10. Confirmation normal helper onboarding no longer depends on admin
+11. Confirmation customer OTP remains unchanged
+12. Confirmation no RTL files/settings were changed
+13. Confirmation saedni-website was not modified
+
+Then STOP and wait for me to perform the real helper registration test.
+
+Do not create a mobile build until I explicitly approve it.

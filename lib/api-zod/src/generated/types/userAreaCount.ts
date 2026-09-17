@@ -5,8 +5,11 @@
  * ساعدني - API specification for the Oman help marketplace
  * OpenAPI spec version: 0.1.0
  */
-import type { DeleteUserBodyConfirmation } from './deleteUserBodyConfirmation';
 
-export type DeleteUserBody = {
-  confirmation: DeleteUserBodyConfirmation;
-};
+export interface UserAreaCount {
+  area: string;
+  /** @minimum 0 */
+  helperCount: number;
+  /** @minimum 0 */
+  customerCount: number;
+}

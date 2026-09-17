@@ -9,6 +9,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
+import { getAuthHeaders } from "@/contexts/AuthContext";
 import { CATEGORIES, STATUS_INFO } from "@/constants/categories";
 
 const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? "saedni.onrender.com"}`;
@@ -27,6 +28,7 @@ interface UserDetail {
   helperActivationCodeActive?: boolean | null;
   helperActivationCodeCreatedAt?: string | null;
   helperActivationCodeUsedAt?: string | null;
+  serviceAreas?: string[];
   createdAt: string;
   lastLogin?: string | null;
 }
@@ -112,7 +114,10 @@ export default function UserDetailScreen() {
   const { data: user, isLoading: userLoading } = useQuery<UserDetail>({
     queryKey: ["admin-user-detail", userId],
     queryFn: async () => {
-      const r = await fetch(`${BASE}/api/users/${userId}`, { credentials: "include" });
+      const r = await fetch(`${BASE}/api/users/${userId}`, {
+        credentials: "include",
+        headers: await getAuthHeaders(),
+      });
       if (!r.ok) throw new Error("فشل تحميل المستخدم");
       return r.json();
     },
@@ -127,7 +132,10 @@ export default function UserDetailScreen() {
       if (user.userType === "customer") url += `?customerId=${userId}`;
       else if (user.userType === "helper") url += `?helperId=${userId}`;
       else return [];
-      const r = await fetch(url, { credentials: "include" });
+      const r = await fetch(url, {
+        credentials: "include",
+        headers: await getAuthHeaders(),
+      });
       if (!r.ok) return [];
       return r.json();
     },
@@ -138,7 +146,7 @@ export default function UserDetailScreen() {
     mutationFn: async (isActive: boolean) => {
       const r = await fetch(`${BASE}/api/users/${userId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         credentials: "include",
         body: JSON.stringify({ isActive }),
       });
@@ -148,6 +156,7 @@ export default function UserDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       qc.invalidateQueries({ queryKey: ["admin-user-detail", userId] });
       qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["/api/users/area-counts"] });
     },
     onError: () => Alert.alert("خطأ", "تعذر تحديث حالة المستخدم"),
   });
@@ -159,6 +168,7 @@ export default function UserDetailScreen() {
       const r = await fetch(`${BASE}/api/admin/helpers/${userId}/regenerate-code`, {
         method: "POST",
         credentials: "include",
+        headers: await getAuthHeaders(),
       });
       if (!r.ok) {
         const body = await r.json().catch(() => ({}));
@@ -180,15 +190,17 @@ export default function UserDetailScreen() {
       const r = await fetch(`${BASE}/api/admin/users/${userId}/delete`, {
         method: "DELETE",
         credentials: "include",
+        headers: await getAuthHeaders(),
       });
       if (!r.ok) throw new Error();
     },
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["/api/users/area-counts"] });
       router.back();
     },
-    onError: () => Alert.alert("خطأ", "تعذر حذف المستخدم"),
+    onError: () => Alert.alert("خطأ", "تعذر تعطيل المستخدم"),
   });
 
   const s = makeStyles(colors, insets.bottom);
@@ -331,8 +343,14 @@ export default function UserDetailScreen() {
                 valueColor={user.isVerified ? colors.primary : "#F59E0B"}
               />
             )}
-            {user.area ? (
-              <InfoRow icon="location-outline" label="المنطقة" value={user.area} />
+            {isHelper ? (
+              <InfoRow
+                icon="location-outline"
+                label="مناطق الخدمة"
+                value={user.serviceAreas?.length ? user.serviceAreas.join("، ") : "بدون مناطق خدمة"}
+              />
+            ) : user.userType === "customer" ? (
+              <InfoRow icon="location-outline" label="المنطقة" value={user.area ?? "بدون منطقة محددة"} />
             ) : null}
             <InfoRow icon="calendar-outline" label="تاريخ التسجيل" value={fmtDate(user.createdAt)} />
             <InfoRow icon="time-outline" label="آخر تسجيل دخول" value={fmtDate(user.lastLogin)} />
@@ -444,15 +462,15 @@ export default function UserDetailScreen() {
               <TouchableOpacity
                 style={s.actionBtnDelete}
                 onPress={() =>
-                  Alert.alert("حذف المستخدم", `سيتم حذف حساب ${user.name} نهائياً ولا يمكن التراجع.`, [
+                  Alert.alert("تعطيل المستخدم", `سيتم تعطيل حساب ${user.name} وأرشفة طلباته. لن تُحذف البيانات نهائياً.`, [
                     { text: "إلغاء", style: "cancel" },
-                    { text: "حذف", style: "destructive", onPress: () => deleteMutation.mutate() },
+                    { text: "تعطيل", style: "destructive", onPress: () => deleteMutation.mutate() },
                   ])
                 }
                 disabled={deleteMutation.isPending}
               >
                 <Ionicons name="trash-outline" size={18} color="#DC2626" />
-                <Text style={s.deleteTxt}>حذف المستخدم</Text>
+                <Text style={s.deleteTxt}>تعطيل المستخدم</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -712,31 +730,6 @@ const makeStyles = (c: ReturnType<typeof useColors>, _bottomInset: number) =>
       borderWidth: 1, borderColor: c.primary + "30",
     },
     otpCopyTxt: { fontSize: 13, fontWeight: "600", color: c.primary },
-
-    // OTP modal
-    modalOverlay: {
-      flex: 1, backgroundColor: "rgba(0,0,0,0.55)",
-      justifyContent: "center", alignItems: "center",
-    },
-    modalCard: {
-      backgroundColor: c.card, borderRadius: 20, paddingHorizontal: 28,
-      paddingTop: 28, paddingBottom: 20, width: "80%", alignItems: "center",
-      shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.18, shadowRadius: 12, elevation: 8,
-    },
-    modalTitle: { fontSize: 18, fontWeight: "700", color: c.foreground, marginBottom: 6 },
-    modalHint: { fontSize: 13, color: c.mutedForeground, marginBottom: 18, textAlign: "center" },
-    modalOtpInput: {
-      fontSize: 32, fontWeight: "800", color: c.primary, letterSpacing: 6,
-      textAlign: "center", borderWidth: 1.5, borderColor: c.primary + "40",
-      borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12,
-      backgroundColor: c.secondary, width: "100%", marginBottom: 20,
-    },
-    modalCloseBtn: {
-      backgroundColor: c.primary, borderRadius: 10,
-      paddingHorizontal: 32, paddingVertical: 10,
-    },
-    modalCloseTxt: { fontSize: 15, fontWeight: "700", color: "#fff" },
 
     // Sections
     section: { marginBottom: 16 },

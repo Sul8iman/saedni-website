@@ -11,4 +11,7 @@ export interface RegisterInput {
   name: string;
   phone: string;
   userType: RegisterInputUserType;
+  /** @nullable */
+  area?: string | null;
+  preferredAreas?: string[];
 }

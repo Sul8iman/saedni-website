@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { Alert } from "react-native";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { isRequestQueryKey } from "@/lib/request-query-keys";
 
 const TOKEN_KEY = "@saedni/authToken";
 const USER_KEY  = "@saedni/user";
@@ -80,6 +82,18 @@ export async function secureDelete(key: string): Promise<void> {
   try { await AsyncStorage.removeItem(key); } catch {}
 }
 
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  const token = await secureGet(TOKEN_KEY);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function clearRequestQueryCache(queryClient: QueryClient): Promise<void> {
+  const requestQuery = ({ queryKey }: { queryKey: readonly unknown[] }) =>
+    isRequestQueryKey(queryKey);
+  await queryClient.cancelQueries({ predicate: requestQuery });
+  queryClient.removeQueries({ predicate: requestQuery });
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface AuthUser {
@@ -136,6 +150,7 @@ const AuthContext = createContext<AuthContextType>({
 // ─── Provider ────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUserState] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [startupLog, setStartupLog] = useState<StartupLog | null>(null);
@@ -217,6 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
               }
             } else if (res.status === 403) {
+              await clearRequestQueryCache(queryClient);
               await secureDelete(TOKEN_KEY);
               await secureDelete(USER_KEY);
               await AsyncStorage.removeItem(ROLE_KEY).catch(() => {});
@@ -226,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               Alert.alert("الحساب معطّل", "تم تعطيل حسابك، يرجى التواصل مع الإدارة", [{ text: "حسناً" }]);
             } else {
               console.warn("[AuthContext] /auth/me returned", res.status, "— clearing stored token");
+              await clearRequestQueryCache(queryClient);
               await secureDelete(TOKEN_KEY);
               await secureDelete(USER_KEY);
               await AsyncStorage.removeItem(ROLE_KEY).catch(() => {});
@@ -263,6 +280,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
+    await clearRequestQueryCache(queryClient);
     console.log("[AuthContext] setSession: saving token", token.substring(0, 8) + "…");
     const tokenResult = await secureSet(TOKEN_KEY, token);
     await secureSet(USER_KEY, JSON.stringify(u));
@@ -294,6 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    await clearRequestQueryCache(queryClient);
     try {
       const token = await secureGet(TOKEN_KEY);
       if (token && BASE) {

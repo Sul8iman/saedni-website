@@ -73,7 +73,7 @@ export default function Admin() {
     );
   };
 
-  // Delete a request permanently
+  // Archive a request. The server keeps it recoverable for administrators.
   const handleDelete = () => {
     if (!pendingDeleteId) return;
     deleteMutation.mutate(
@@ -83,11 +83,11 @@ export default function Admin() {
           queryClient.invalidateQueries({ queryKey: getListRequestsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
           setPendingDeleteId(null);
-          toast({ title: "تم حذف الطلب" });
+          toast({ title: "تمت أرشفة الطلب" });
         },
         onError: () => {
           setPendingDeleteId(null);
-          toast({ title: "خطأ", description: "فشل حذف الطلب", variant: "destructive" });
+          toast({ title: "خطأ", description: "فشلت أرشفة الطلب", variant: "destructive" });
         },
       }
     );
@@ -230,7 +230,7 @@ export default function Admin() {
                       data-testid={`btn-delete-request-${req.id}`}
                     >
                       <Trash2 className="w-4 h-4" />
-                      {!isActive && <span className="mr-1.5">حذف الطلب</span>}
+                      {!isActive && <span className="mr-1.5">أرشفة الطلب</span>}
                     </Button>
                   </div>
                 </div>
@@ -242,12 +242,12 @@ export default function Admin() {
 
       <BottomNav />
 
-      {/* Confirm delete modal */}
+      {/* Confirm archive modal */}
       <ConfirmModal
         open={pendingDeleteId !== null}
-        title="حذف الطلب"
-        message="هل أنت متأكد من حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء."
-        confirmLabel="نعم، حذف الطلب"
+        title="أرشفة الطلب"
+        message="سيتم نقل الطلب إلى الأرشيف. يمكن للمدير مراجعته واستعادته لاحقاً."
+        confirmLabel="نعم، أرشفة الطلب"
         onConfirm={handleDelete}
         onCancel={() => setPendingDeleteId(null)}
         loading={deleteMutation.isPending}
