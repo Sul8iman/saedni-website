@@ -1,0 +1,167 @@
+Create a new Android production build containing ALL latest Saedni updates.
+
+Repository:
+Sul8iman/saedni
+
+Branch:
+main
+
+IMPORTANT:
+Build from the latest verified main commit only.
+
+Do NOT use:
+Sul8iman/saedni-website
+
+Do NOT re-implement features that are already complete.
+Do NOT modify RTL unless required only to preserve the current source.
+Do NOT make unrelated code changes.
+
+==================================================
+LATEST FEATURES THAT MUST BE INCLUDED
+==================================================
+
+The Android build must contain all current Saedni main functionality, including:
+
+1. Helper onboarding:
+   - 6-digit WhatsApp OTP
+   - automatic helper activation
+   - no normal admin activation-code requirement
+   - no "تواصل مع الإدارة" in normal helper onboarding
+   - saedni_helper_welcome sent once after first activation
+
+2. Admin:
+   - admin login/session compatibility fix
+   - no "Something went wrong" crash
+   - protected admin API requests use authentication
+   - dashboard handles API responses safely
+   - emergency helper activation code still available in admin area
+
+3. Admin Users search:
+   - search by name
+   - search by 8-digit Oman phone
+   - search by 968-prefixed phone
+   - search by +968-prefixed phone
+   - partial phone search
+   - helper/customer filters still work with search
+
+4. Admin notifications:
+   - new customer notification
+   - new helper notification
+   - new request notification
+   - notification record appears in admin notifications
+   - push attempted using existing admin push-token flow
+   - duplicate prevention
+
+5. Customer flow:
+   - existing 6-digit WhatsApp OTP unchanged
+   - existing customer login/registration remains working
+
+==================================================
+BACKEND CHECK
+==================================================
+
+Before building Android, verify Render is live on the latest backend commit containing the admin-notification work.
+
+Latest known notification commit:
+e3e8424
+
+If main has a newer legitimate commit containing e3e8424, use that.
+
+Confirm:
+GET https://saedni.onrender.com/api/healthz
+returns HTTP 200.
+
+Do not build against an outdated backend.
+
+==================================================
+ANDROID VERSION
+==================================================
+
+Check Google Play Console/EAS history first.
+
+Determine:
+- latest Android versionName
+- highest Android versionCode already uploaded
+
+Do NOT reuse a versionCode.
+
+Use the next unused versionCode.
+
+Keep the current app version if appropriate, or increment it consistently if needed.
+
+Report the chosen:
+- versionName
+- versionCode
+
+before building.
+
+==================================================
+PRE-BUILD CHECKS
+==================================================
+
+Run:
+
+pnpm install --frozen-lockfile
+
+Run mobile TypeScript check.
+
+Run API TypeScript check if needed for shared generated contracts.
+
+Verify:
+- no uncommitted unrelated files
+- no website files
+- no temporary debug labels
+- no stale build markers
+
+==================================================
+ANDROID BUILD
+==================================================
+
+Create a clean Android production build:
+
+eas build --platform android --profile production --clear-cache
+
+Wait until status is FINISHED.
+
+The output must be an Android App Bundle (.aab).
+
+==================================================
+GOOGLE PLAY
+==================================================
+
+Do NOT automatically submit to production.
+
+After the build finishes, provide:
+
+- exact AAB download URL
+- EAS Build ID
+- versionName
+- versionCode
+- Git commit SHA
+
+I will upload it to the existing Closed Testing track first.
+
+Do NOT create a Google Play production release automatically.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Report:
+
+1. Source commit SHA
+2. Backend Render commit/status
+3. Android versionName
+4. Android versionCode
+5. EAS Build ID
+6. Build status
+7. AAB download URL
+8. Confirmation all latest helper onboarding changes are included
+9. Confirmation admin crash fix is included
+10. Confirmation admin phone/name search is included
+11. Confirmation admin notifications are included
+12. Confirmation customer OTP remains unchanged
+13. Confirmation no website files were included
+14. Confirmation no Google Play production submission was made
+
+STOP after the AAB is successfully built.

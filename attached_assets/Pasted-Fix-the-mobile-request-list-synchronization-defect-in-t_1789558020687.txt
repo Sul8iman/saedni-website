@@ -1,0 +1,125 @@
+Fix the mobile request-list synchronization defect in the Saedni iPhone app.
+
+Current production behavior:
+
+1. A customer publishes a new request successfully.
+2. The new request does not appear in the request list.
+3. Only older cached requests remain visible.
+4. After logging out and signing in again, the old requests disappear and only the new request appears.
+
+This indicates stale query cache, incorrect query invalidation, user/session cache leakage, or broken pagination merging.
+
+Required behavior:
+
+- Immediately after successfully creating a request, the new request must appear in the customer’s “طلباتي” list without logout or app restart.
+- Existing requests must remain visible.
+- Helpers authorized for the request’s area/category must see the new request after refresh.
+- Logging out and signing in again must not change which requests are returned for the same user.
+- Never delete, hide, duplicate, or replace valid requests because of a frontend cache operation.
+
+Required diagnosis:
+
+1. Reproduce the issue in the actual authenticated iPhone app, not a mockup.
+2. Capture privacy-safe request information before and after creation:
+   - endpoint
+   - HTTP status
+   - request ID
+   - active query parameters
+   - returned item count
+   - page and pagination metadata
+3. Compare the API response with the mobile list before and after logout.
+4. Determine whether the defect is in:
+   - API response/filtering;
+   - React Query cache;
+   - query keys;
+   - persisted AsyncStorage cache;
+   - pagination;
+   - user/session switching;
+   - area/category/status filters;
+   - incorrect list replacement or merging.
+
+Mobile fixes:
+
+1. After POST /api/requests succeeds:
+   - invalidate and refetch all relevant customer request queries;
+   - invalidate relevant helper available-request queries;
+   - reset affected pagination to page 1;
+   - optionally insert the returned request into the customer cache immediately, without duplicating it.
+2. Query keys must include:
+   - authenticated user ID;
+   - role/account type;
+   - request status;
+   - selected area/category;
+   - page and page size;
+   - any other active filter.
+3. Do not reuse one user’s cached requests for another user or role.
+4. On logout:
+   - cancel active queries;
+   - remove user-specific request caches;
+   - clear authentication state safely.
+5. On login:
+   - fetch requests from the backend;
+   - do not restore another session’s stale request list.
+6. When refreshing:
+   - page 1 must replace the old page 1;
+   - subsequent pages must append;
+   - deduplicate requests by request ID;
+   - do not replace the entire list with only the newest request.
+7. Ensure FlatList uses a stable key:
+   request.id
+8. Do not persist API request-list cache in AsyncStorage unless it is correctly scoped by user and invalidated.
+9. Trigger refetch when the request screen receives focus.
+10. Preserve pull-to-refresh and loading/error states.
+
+Backend verification:
+
+1. Verify GET /api/requests returns all requests authorized for the logged-in user, not only the newest request.
+2. Verify ordering is newest first using a stable secondary sort:
+   created_at DESC, id DESC
+3. Apply filters before pagination.
+4. Return correct pagination metadata.
+5. Confirm creating a request does not archive, replace, or alter older requests.
+6. Confirm helper visibility still uses the helper’s service areas.
+7. Do not change or delete production request records.
+
+Required regression tests:
+
+Customer:
+- Start with at least two existing requests.
+- Publish a new request.
+- Confirm all previous requests plus the new request appear immediately.
+- Refresh the list and confirm the same IDs remain.
+- Close and reopen the screen.
+- Restart the app.
+- Log out and log in.
+- Results must remain consistent in every case.
+
+Helper:
+- Publish a request in an area served by the helper.
+- Confirm it appears after refresh without logout.
+- Confirm older eligible requests remain visible.
+- Confirm unrelated-area requests do not appear.
+
+Pagination:
+- Test more requests than one page.
+- Confirm page 1 refresh does not delete later valid pages incorrectly.
+- Confirm loading page 2 does not replace page 1.
+- Confirm no duplicate request IDs.
+
+Security and safety:
+
+- Do not modify production data to hide the symptom.
+- Do not delete or rewrite historical requests.
+- Do not change the database schema unless a proven backend defect requires an approved migration.
+- Use synthetic test data only in an isolated test environment.
+- Do not run destructive cleanup against production.
+
+After the fix:
+
+- Run API tests and mobile typecheck.
+- Verify with the actual authenticated iPhone screen.
+- Deploy Render only if backend code changed.
+- Increment to the next unused iOS build number.
+- Keep version 1.0.9 and bundle ID com.saedni.app.
+- Upload the corrected build to the existing Saedni TestFlight app.
+- Report the exact root cause, changed files, build number, and verification results.

@@ -40,8 +40,6 @@ export interface User {
   isVerified?: boolean;
   isBlocked?: boolean;
   /** @nullable */
-  deletedAt?: string | null;
-  /** @nullable */
   lastLogin?: string | null;
   /** @nullable */
   otpCode?: string | null;
@@ -74,17 +72,8 @@ export interface RegisterInput {
   preferredAreas?: string[];
 }
 
-export type LoginInputUserType = typeof LoginInputUserType[keyof typeof LoginInputUserType];
-
-
-export const LoginInputUserType = {
-  customer: 'customer',
-  helper: 'helper',
-} as const;
-
 export interface LoginInput {
   phone: string;
-  userType: LoginInputUserType;
 }
 
 export interface VerifyOtpInput {
@@ -543,27 +532,4 @@ export const ListAdminArchiveRequestsResult = {
   not_helped: 'not_helped',
   all: 'all',
 } as const;
-
-export type DeleteUserBodyConfirmation = typeof DeleteUserBodyConfirmation[keyof typeof DeleteUserBodyConfirmation];
-
-
-export const DeleteUserBodyConfirmation = {
-  حذف: 'حذف',
-} as const;
-
-export type DeleteUserBody = {
-  confirmation: DeleteUserBodyConfirmation;
-};
-
-export type DeleteUser200DeletionMode = typeof DeleteUser200DeletionMode[keyof typeof DeleteUser200DeletionMode];
-
-
-export const DeleteUser200DeletionMode = {
-  permanent: 'permanent',
-  anonymized: 'anonymized',
-} as const;
-
-export type DeleteUser200 = {
-  deletionMode: DeleteUser200DeletionMode;
-};
 

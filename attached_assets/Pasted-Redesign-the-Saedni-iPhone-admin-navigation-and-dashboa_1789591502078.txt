@@ -1,0 +1,317 @@
+Redesign the Saedni iPhone admin navigation and dashboard as described below. The iPhone app is the primary target. Do not implement this only on the web admin interface.
+
+## 1. Admin navigation
+
+Update the existing mobile admin navigation:
+
+- Replace the current “الإشعارات” navigation position with:
+  المستخدمون
+- Move “الإشعارات” to the current position occupied by “المستخدمون”.
+- Preserve all existing Users Management features without removing anything:
+  - Search by name or phone
+  - Account-type filter
+  - Area filter
+  - Multiple-area filtering
+  - All areas
+  - No area selected
+  - Active/blocked filter
+  - Pagination
+  - User details
+  - Activation/blocking controls
+  - Existing OTP/admin controls
+- Preserve the unread notification badge and notification functionality after moving it.
+- Add a new admin section:
+  الإحصائيات
+
+Use clear Arabic RTL icons and labels. Keep the number of primary navigation items usable on iPhone screens. If necessary, place less frequently used items inside an admin “المزيد” menu, but keep requests, archive, users, and statistics directly accessible.
+
+## 2. Active requests section
+
+The “الطلبات” section must display active requests only.
+
+Active means:
+
+- The request has not been completed.
+- It is not archived or soft-deleted.
+- It is still available/current according to the existing request lifecycle.
+
+Requirements:
+
+- Do not show completed requests in this section.
+- Show the total active-request count in the section title or badge.
+- Allow filtering by one or multiple Muscat areas.
+- Include:
+  - كل المناطق
+  - Multiple selected areas using OR logic
+- Preserve existing category, search, date, and pagination functionality where available.
+- Apply filters through the backend before pagination.
+- Sort newest requests first using:
+  created_at DESC, id DESC
+- Display the request’s area clearly on every card.
+- Refresh the list when the screen gains focus and after a request is completed.
+
+## 3. Archive section
+
+The “الأرشيف” section must display completed requests only.
+
+Show the total completed-request count beside the section title:
+
+الأرشيف (X)
+
+Divide the archive into two clear tabs:
+
+- تمت المساعدة (X)
+- لم تتم المساعدة (X)
+
+Definitions:
+
+- “تمت المساعدة”:
+  completed request where help_completed = true
+- “لم تتم المساعدة”:
+  completed request where help_completed = false
+
+Requirements:
+
+- Counts must come from the backend and must represent the complete filtered dataset, not only the currently loaded page.
+- Allow filtering by one or multiple Muscat areas.
+- Area filtering must use OR logic.
+- Include “كل المناطق”.
+- Changing the area filter must update:
+  - Total archive count
+  - Helped count
+  - Not-helped count
+  - Displayed request list
+- Preserve pagination.
+- Display request area, category, customer, completion date, offered amount, and result.
+- If a completed helper exists, display the helper’s name and phone number to authorized admins.
+- Do not include active requests in the archive.
+- Do not include soft-deleted requests unless the existing admin policy explicitly treats them as archived deletions. Keep deleted records separate from normally completed requests.
+
+## 4. Statistics section
+
+Add a new iPhone admin screen titled:
+
+الإحصائيات
+
+Include a date-range selector:
+
+- آخر 7 أيام
+- آخر 30 يومًا
+- هذا الشهر
+- كل الوقت
+- Custom date range, if practical
+
+Display the following statistics:
+
+### Users
+
+- إجمالي المستخدمين
+- العملاء
+- المساعدون
+- المستخدمون النشطون
+- المستخدمون المحظورون
+- المستخدمون الجدد during the selected period
+
+Clarify role counting:
+If one user has both roles, count them once in total users but in each relevant role count. Document this behavior.
+
+### Requests
+
+- مجموع الطلبات
+- الطلبات النشطة
+- الطلبات المنتهية
+- تمت المساعدة
+- لم تتم المساعدة
+- الطلبات الجديدة during the selected period
+
+Do not count soft-deleted requests unless explicitly shown as a separate metric.
+
+### Success
+
+Calculate:
+
+نسبة النجاح =
+تمت المساعدة ÷ (تمت المساعدة + لم تتم المساعدة) × 100
+
+- Exclude active requests from the success-rate denominator.
+- Handle zero completed requests safely.
+- Display the percentage with one decimal place.
+
+### Request value
+
+Display:
+
+إجمالي قيمة الطلبات التي تمت مساعدتها
+
+Calculate it as the sum of the offered amount for requests marked “تمت المساعدة”.
+
+Important:
+
+- Do not call this revenue.
+- Add an explanation that these are offered request values and not confirmed in-app payments.
+- Format the amount in OMR.
+- Also display:
+  متوسط قيمة الطلب الناجح
+
+### Contact and marketplace performance
+
+Add:
+
+- الطلبات التي حصلت على متواصل واحد على الأقل
+- نسبة الطلبات التي حصلت على تواصل
+- متوسط عدد المساعدين المتواصلين لكل طلب
+- متوسط وقت أول تواصل
+- الطلبات التي لم تحصل على أي تواصل
+
+Definitions:
+
+- Use `request_contacts`.
+- Count each helper once per request.
+- First-contact time is:
+  first_contacted_at - request.created_at
+- Do not calculate these values from mobile pagination.
+
+### Ratings
+
+Add:
+
+- متوسط تقييم المساعدين
+- إجمالي عدد التقييمات
+- عدد المساعدين الذين لديهم تقييم
+- عدد المساعدين بدون تقييم
+
+Use `helper_ratings` as the source of truth.
+
+### Breakdown
+
+Add compact rankings:
+
+- أكثر المناطق طلبًا
+- نسبة النجاح حسب المنطقة
+- أكثر الخدمات طلبًا
+- نسبة النجاح حسب نوع الخدمة
+
+For each area/category, show:
+
+- Total requests
+- Active
+- Helped
+- Not helped
+- Success rate
+
+Use the new category display labels:
+
+- مندوب توصيل
+- شاحنة للنقل
+
+Keep underlying category IDs unchanged.
+
+### Customer retention
+
+If the existing data supports it without a new schema, add:
+
+- العملاء الذين نشروا طلبًا واحدًا
+- العملاء المتكررون الذين نشروا طلبين أو أكثر
+- نسبة العملاء المتكررين
+
+Do not create artificial “active user” or retention metrics unless they can be calculated reliably from existing data.
+
+## 5. Backend/API
+
+Create authorized admin-only aggregate endpoints or extend the current admin statistics API.
+
+Requirements:
+
+- Perform aggregation in the backend/database.
+- Do not download all users or requests to the phone to calculate totals.
+- Return counts and sums independent of pagination.
+- Support:
+  - Date range
+  - Area or multiple areas
+  - Category when required
+- Normalize one query value and multiple repeated query values correctly.
+- Use exact status/completion definitions consistently across:
+  - Active requests
+  - Archive
+  - Statistics
+- Protect all endpoints with admin authorization.
+- Do not expose personal data in aggregate responses.
+- Do not modify production records.
+- Avoid a database migration unless proven necessary.
+
+## 6. Consistency requirements
+
+The same request must never simultaneously appear as active and archived.
+
+Use one shared backend definition for:
+
+- Active
+- Completed
+- Helped
+- Not helped
+- Soft deleted
+
+The following equality must hold for the same filters:
+
+completed requests =
+helped + not helped
+
+The following should hold when soft-deleted requests are excluded:
+
+total requests =
+active + completed
+
+Investigate and report any legacy records that do not fit these definitions. Do not rewrite them automatically.
+
+## 7. iPhone presentation
+
+Use compact statistic cards suitable for different iPhone screen sizes.
+
+Recommended hierarchy:
+
+- First row: active requests, completed requests
+- Second row: helped, not helped
+- Third row: success rate, total successful-request value
+- Then contact-performance cards
+- Then area/category breakdowns
+- Then users and ratings
+
+Use Arabic RTL formatting throughout.
+
+Use:
+- Green for successful/helped
+- Red or muted orange for not helped
+- Blue/neutral for active
+- Neutral gray for totals
+
+Do not overload the dashboard with large charts. Use cards, percentages, progress bars, and short ranked lists. Add charts only when they materially improve comparison.
+
+## 8. Testing
+
+Verify in the actual authenticated iPhone admin app:
+
+- Requests section shows active requests only.
+- Archive shows completed requests only.
+- Helped and not-helped counts equal the archive total.
+- Area filters update lists and all relevant counts.
+- Single-area and multiple-area filters work.
+- Users section retains every existing feature.
+- Notifications work in their new position.
+- Unread badge remains accurate.
+- Statistics match privacy-safe backend aggregate queries.
+- Date filters work.
+- Success-rate formula is correct.
+- Successful-request value is calculated correctly.
+- Pagination does not affect counts.
+- Arabic RTL layout works on different iPhone sizes.
+
+Run API tests, mobile typecheck, clean Metro restart, and production mobile bundle validation.
+
+Do not begin Expo Launch until all screens are verified in the actual mobile application.
+
+After verification:
+
+- Deploy backend changes to Render if required.
+- Use the next unused iOS build number.
+- Keep version 1.0.9 and bundle ID com.saedni.app.
+- Upload the new build to the existing Saedni TestFlight app.

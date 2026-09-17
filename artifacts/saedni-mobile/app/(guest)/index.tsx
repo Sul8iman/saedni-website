@@ -68,10 +68,8 @@ export default function GuestBrowseScreen() {
 
   const { data: allData, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["guest-available-requests"],
-    queryFn: async () => {
-      const r = await fetch(`${BASE}/api/requests?status=available`);
-      return r.json() as Promise<HelpRequest[]>;
-    },
+    // Live requests are intentionally private; browsing begins after sign-in.
+    queryFn: async () => [] as HelpRequest[],
   });
 
   const data = (allData ?? []).filter(item => {

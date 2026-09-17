@@ -1,0 +1,257 @@
+The WhatsApp template has now been APPROVED by Meta.
+
+Proceed with implementing the new Saedni helper onboarding flow described in the previous specification.
+
+Approved template:
+Template name: saedni_helper_welcome
+Language: Arabic
+
+IMPORTANT:
+First verify the exact approved language code from the existing WhatsApp/Meta configuration before hardcoding it (for example ar). Use the exact code required by the WhatsApp Cloud API.
+
+The approved template contains the Saedni WhatsApp Channel link in the message body. Do NOT add a CTA button and do NOT send a separate free-form WhatsApp message.
+
+==================================================
+NEW HELPER FLOW
+==================================================
+
+Change the normal helper onboarding to:
+
+Helper registration
+→ 6-digit WhatsApp OTP
+→ correct OTP verification
+→ automatic helper activation
+→ immediate access to Saedni
+→ send approved WhatsApp template once
+
+The helper must no longer need an admin-generated activation code during normal registration.
+
+==================================================
+WHATSAPP OTP
+==================================================
+
+Use the existing working WhatsApp OTP infrastructure.
+
+For helpers:
+- Generate/send the same 6-digit WhatsApp OTP mechanism used for verification.
+- Verify the OTP through the backend.
+- After successful OTP verification, automatically activate the helper.
+- Issue the normal authentication/session token immediately.
+
+Do not require the helper to contact administration.
+
+Keep the existing customer/requester OTP flow unchanged.
+
+==================================================
+WELCOME TEMPLATE
+==================================================
+
+Immediately AFTER the helper has been successfully activated for the first time, send:
+
+Template:
+saedni_helper_welcome
+
+Language:
+Use the exact approved Arabic language code from Meta.
+
+Send it using the existing WhatsApp Cloud API template-message implementation.
+
+Important:
+- Template only.
+- No free-form follow-up message.
+- No CTA button.
+- Do not append another channel URL outside the template.
+- Do not send it before successful OTP verification.
+
+==================================================
+SEND ONLY ONCE
+==================================================
+
+The welcome template must be sent only once per helper activation.
+
+Add an idempotency field if necessary, for example:
+
+helperWelcomeMessageSentAt
+
+Behavior:
+
+If helperWelcomeMessageSentAt is NULL:
+→ attempt to send saedni_helper_welcome
+→ on confirmed successful WhatsApp API acceptance, save timestamp
+
+If it already contains a timestamp:
+→ never send the welcome template again during login or repeated verification.
+
+Do not mark it as sent before WhatsApp API accepts the template request.
+
+==================================================
+FAILURE BEHAVIOR
+==================================================
+
+WhatsApp welcome-message delivery MUST NOT block helper activation.
+
+Correct sequence:
+
+1. Verify OTP
+2. Activate helper
+3. Issue/prepare normal authentication
+4. Attempt saedni_helper_welcome
+5. If successful, record helperWelcomeMessageSentAt
+6. If sending fails, helper remains activated and can use Saedni
+
+Safely log the WhatsApp failure without exposing access tokens, OTPs, or sensitive user information.
+
+Do not return an authentication failure just because the welcome template failed.
+
+==================================================
+ADMIN ACTIVATION CODE
+==================================================
+
+Keep the existing admin-generated helper activation-code system as an emergency/manual recovery feature.
+
+Do NOT delete:
+- Generate new activation code
+- Single-use behavior
+- No-expiry behavior
+- Previous-code invalidation
+- One-time code display
+- Copy button
+
+But remove it completely from the NORMAL helper onboarding UI.
+
+A new helper should not see:
+- "تواصل مع الإدارة"
+- activation-code input
+- instructions to request a code from admin
+
+The admin functionality should remain accessible only from the admin side.
+
+==================================================
+MOBILE UI
+==================================================
+
+New helper mobile journey:
+
+إنشاء حساب كمساعد
+→ إدخال البيانات
+→ استلام رمز واتساب
+→ إدخال رمز التحقق المكون من 6 أرقام
+→ تفعيل الحساب مباشرة
+→ الدخول إلى ساعدني
+
+Do NOT add a separate WhatsApp Channel onboarding screen.
+
+The approved saedni_helper_welcome WhatsApp template handles the channel invitation.
+
+==================================================
+DO NOT TOUCH RTL
+==================================================
+
+Do NOT modify:
+- Arabic RTL implementation
+- ArabicText
+- ArabicTextInput
+- SectionLabel
+- I18nManager
+- iOS RTL
+- Android RTL
+- layout direction
+
+This change is strictly about helper verification/onboarding and the approved WhatsApp template.
+
+==================================================
+DATABASE
+==================================================
+
+If helperWelcomeMessageSentAt does not already exist:
+
+Create a proper migration.
+
+Do not delete or reset existing data.
+
+Existing helpers and customers must remain unaffected.
+
+==================================================
+TEST BEFORE PUSH
+==================================================
+
+Test all of these:
+
+1. New helper registration generates/sends 6-digit WhatsApp OTP.
+
+2. Wrong OTP:
+   - helper remains unverified
+   - welcome template is NOT sent.
+
+3. Correct OTP:
+   - helper becomes activated automatically
+   - no admin code required
+   - authentication succeeds immediately.
+
+4. Confirm saedni_helper_welcome is sent after first successful activation.
+
+5. Confirm successful WhatsApp API response before storing helperWelcomeMessageSentAt.
+
+6. Logout/login again:
+   - template is NOT sent again.
+
+7. Repeated verification/API call:
+   - template is NOT duplicated.
+
+8. Simulate welcome-template failure:
+   - helper remains activated
+   - authentication still succeeds.
+
+9. Customer/requester OTP:
+   - existing behavior remains unchanged.
+
+10. Admin emergency activation-code system:
+   - still works from admin side.
+
+11. Verify existing helpers can still log in normally.
+
+==================================================
+CHECKS
+==================================================
+
+Run:
+- pnpm install --frozen-lockfile
+- API TypeScript check
+- Mobile TypeScript check
+- relevant backend tests
+
+Do not run/commit unrelated Expo prebuild changes.
+
+==================================================
+GIT
+==================================================
+
+Push ONLY to:
+
+Sul8iman/saedni
+branch: main
+
+Do NOT push to:
+Sul8iman/saedni-website
+
+Do NOT force push.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Before creating any new App Store or Google Play build, report:
+
+- Starting commit SHA
+- New commit SHA
+- Exact files changed
+- Database migration
+- WhatsApp template name and language code used
+- New helper onboarding flow
+- Results of all tests
+- Confirmation customer OTP remains unchanged
+- Confirmation admin emergency code remains available
+- Confirmation no RTL files/settings were modified
+- Confirmation saedni-website was not modified
+
+Do not create a mobile production build yet.

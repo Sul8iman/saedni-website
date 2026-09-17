@@ -11,21 +11,53 @@ id = "BT1noBM79IyireyRi5K0H"
 uri = "file://saedni_migration.zip"
 type = "unspecified"
 title = "saedni_migration.zip — 4 SQL migration files"
+logical_id = "fc8bbe81-cb2b-4306-a2f8-683a131e99e0"
 
 [[outputs]]
 id = "-BEEAFniCInNpt-iUIkYu"
 uri = "file://saedni_prod_migration.zip"
 type = "unspecified"
 title = "saedni_prod_migration.zip — 005_prod_data.sql + 006_verify_prod.sql"
+logical_id = "102d9668-6943-495d-b505-bd7730b31b41"
 
 [[outputs]]
 id = "jPyv9HlDAZlE0hEog4JTD"
 uri = "file://saedni_prod_migration_fixed.zip"
 type = "unspecified"
 title = "saedni_prod_migration_fixed.zip — 005_prod_data_fixed.sql + 006_verify_prod.sql"
+logical_id = "5076ae28-9bdb-4eac-b11f-9948b29ce1b8"
 
 [[outputs]]
 id = "PC5xCS4anQrAxgXrGCYBc"
 uri = "file://attached_assets/saedni-feature-graphic.png"
 type = "image"
 title = "ساعدني — Google Play Feature Graphic (16:9)"
+logical_id = "af89cf80-b79b-4b8c-8cfd-bd45c2971f97"
+
+[[outputs]]
+id = "HY1sxBjMucm-cnJfNc8_q"
+uri = "file://screenshots/admin-users-mobile-area-filter.jpg"
+type = "image"
+title = "Saedni iPhone admin users screen"
+description = "Actual 402×874 mobile preview showing the RTL Users Management screen with search, account type, status, area filter, and pagination controls."
+logical_id = "d859f820-42b1-4248-affe-450036504ca5"
+content_hash = "sha256:0092241562a035879b510c7349995e54c25b4c5a75ac98d2cb8dde32fe9de9e8"
+size = 15880
+mtime_ms = 1789415674514
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:dc6a8939-d6ba-42fa-b4c1-6825c5ef765e/d859f820-42b1-4248-affe-450036504ca5/9ef78b6c-0479-47e6-83c9-8e44085019e8"
+storage_version_token = "1789415877891473"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "53hK53ptaK7LEhrBSR3tJ"
+uri = "file://screenshots/actual-admin-users-area-filter-clean-metro.jpg"
+type = "image"
+title = "Actual Expo mobile admin users screen after clean Metro restart"
+description = "Fresh 402×874 capture from the saedni-mobile Expo artifact at the real /users route. It shows the Arabic area filter control (المنطقة / كل المناطق) inside the admin Users screen after clearing /tmp/metro-cache and restarting Expo."
+logical_id = "604c1e84-0d72-4d0a-9049-0c9df7283018"
+content_hash = "sha256:0092241562a035879b510c7349995e54c25b4c5a75ac98d2cb8dde32fe9de9e8"
+size = 15880
+mtime_ms = 1789548362698
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:dc6a8939-d6ba-42fa-b4c1-6825c5ef765e/604c1e84-0d72-4d0a-9049-0c9df7283018/e9403fa3-5d5c-4164-ba7f-438eaecdfc2e"
+storage_version_token = "1789548395918971"
+content_type = "image/jpeg"

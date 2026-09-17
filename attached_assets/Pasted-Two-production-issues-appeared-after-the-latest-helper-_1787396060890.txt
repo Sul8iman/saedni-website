@@ -1,0 +1,276 @@
+Two production issues appeared after the latest helper onboarding update.
+
+Work only on:
+
+Repository:
+Sul8iman/saedni
+
+Branch:
+main
+
+Do NOT modify saedni-website.
+Do NOT make RTL changes.
+Do NOT create a new mobile build until both issues are fixed and verified.
+
+==================================================
+ISSUE 1 — REMOVE OLD "CONTACT ADMIN" HELPER UI
+==================================================
+
+The new helper flow is now working correctly:
+
+Helper registration
+→ 6-digit WhatsApp OTP
+→ successful verification
+→ automatic activation
+→ saedni_helper_welcome template is sent
+→ channel link arrives on WhatsApp
+
+However, the mobile app still shows the OLD helper activation UI:
+
+"تواصل مع الإدارة للتفعيل"
+
+and still shows the button to contact the admin.
+
+This is obsolete and must be removed from the normal helper flow.
+
+Required:
+
+1. Search the entire mobile project for all helper-facing text/buttons related to:
+   - تواصل مع الإدارة
+   - التواصل مع الإدارة
+   - رمز التفعيل من الإدارة
+   - الحصول على رمز التفعيل
+   - زر واتساب الإدارة
+   - admin activation code
+   - activationCode UI
+   - otpDelivery === "admin"
+   - any helper onboarding branch that still routes to admin activation
+
+2. Remove these from normal helper registration/login.
+
+3. For a normal helper:
+   - after OTP is sent → show only the 6-digit WhatsApp OTP screen
+   - after correct OTP → activate and enter the app
+   - no admin-contact button
+   - no admin activation-code input
+   - no admin activation instructions
+
+4. Keep the admin emergency recovery-code feature ONLY inside the admin area/backend.
+Do not expose it to normal helper onboarding.
+
+5. Verify BOTH:
+   - helper register screen
+   - helper login screen
+
+==================================================
+ISSUE 2 — ADMIN ACCOUNT CRASHES WITH "SOMETHING WENT WRONG"
+==================================================
+
+After the latest update, opening/logging into the admin account now shows:
+
+"Something went wrong"
+
+and the admin account cannot be used.
+
+This worked before the helper onboarding update.
+
+Investigate the regression introduced by the latest commits.
+
+Important context:
+The admin flow previously received notifications when helpers requested activation codes.
+That normal helper activation flow has now been removed.
+
+Possible regression areas to inspect:
+
+- admin notifications
+- helper-code notification assumptions
+- admin dashboard queries
+- user-detail queries
+- API response shape changes
+- admin auth/session
+- missing/undefined fields after helper onboarding refactor
+- components expecting old OTP/activation-code data
+- admin route authorization changes
+- bearer token handling
+- generated API client changes
+
+Do NOT guess.
+
+==================================================
+ADMIN CRASH INVESTIGATION
+==================================================
+
+1. Reproduce the admin issue locally or against production-safe endpoints.
+
+2. Capture the exact frontend exception:
+   - file
+   - line
+   - stack trace
+
+3. Identify the exact API request that occurs immediately before the crash.
+
+4. Report:
+   - endpoint
+   - HTTP status
+   - response body shape
+   - which frontend code tries to read/use it
+
+5. Check whether the latest change that protected /admin endpoints now requires an auth token but some admin screens still call those routes without Bearer authentication.
+
+6. Search every admin API request in the mobile app and confirm all protected admin endpoints receive:
+
+Authorization: Bearer <admin token>
+
+7. Check whether the admin home/dashboard expects old helper activation notifications that no longer exist.
+
+8. Check whether any removed/renamed fields are accessed without null handling.
+
+==================================================
+EXPECTED ADMIN BEHAVIOR
+==================================================
+
+Admin phone:
+98584898
+
+Expected:
+
+- admin login works
+- no "Something went wrong"
+- admin dashboard loads
+- users list loads
+- requests list loads
+- helper details load
+- emergency helper activation-code controls still work
+- notifications screen does not crash even if there are no activation-code requests
+
+Do not expose admin PIN or secrets in logs/output.
+
+==================================================
+IMPORTANT — DO NOT REINTRODUCE OLD FLOW
+==================================================
+
+Do NOT fix the admin crash by restoring the old normal helper activation-code flow.
+
+The correct architecture is:
+
+Normal helper:
+WhatsApp OTP → automatic activation
+
+Admin:
+Emergency/manual recovery code only
+
+The admin must not be required for normal helper onboarding.
+
+==================================================
+TESTS REQUIRED
+==================================================
+
+TEST 1 — New helper registration
+Expected:
+- WhatsApp OTP screen only
+- no "تواصل مع الإدارة"
+- no admin WhatsApp button
+- correct OTP activates helper
+
+TEST 2 — Existing helper login
+Expected:
+- normal login works
+- no admin activation message
+
+TEST 3 — Customer login/register
+Expected:
+- unchanged and working
+
+TEST 4 — Admin login
+Use admin phone 98584898.
+Expected:
+- admin PIN flow works
+- no crash
+
+TEST 5 — Admin dashboard
+Expected:
+- loads normally
+
+TEST 6 — Admin users
+Expected:
+- users list loads
+
+TEST 7 — Admin helper details
+Expected:
+- helper details load
+- emergency "إنشاء رمز جديد" remains available
+
+TEST 8 — Admin notifications
+Expected:
+- screen loads even if there are no helper-code requests
+- no assumptions that normal helpers request admin codes
+
+TEST 9 — WhatsApp helper flow
+Expected:
+- OTP is sent
+- helper auto-activates
+- saedni_helper_welcome is sent once
+- no duplicate welcome message
+
+==================================================
+DO NOT TOUCH
+==================================================
+
+Do NOT modify:
+- RTL
+- ArabicText
+- ArabicTextInput
+- I18nManager
+- WhatsApp template contents
+- customer OTP expiry
+- saedni-website
+- Google Play/App Store versioning
+
+==================================================
+BEFORE PUSH
+==================================================
+
+Run:
+
+pnpm install --frozen-lockfile
+
+API TypeScript check
+
+Mobile TypeScript check
+
+Relevant backend tests
+
+Verify all admin API calls include auth where required
+
+Verify no helper-facing "تواصل مع الإدارة" text remains in normal onboarding
+
+==================================================
+GIT
+==================================================
+
+Push only to:
+
+Sul8iman/saedni
+main
+
+No force push.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Before creating any mobile build, report:
+
+1. Root cause of the remaining helper admin-contact UI
+2. Exact files/lines removed
+3. Root cause of the admin "Something went wrong" crash
+4. Exact frontend exception
+5. Exact API endpoint/status involved
+6. Files changed
+7. Test results for all 9 tests
+8. Confirmation emergency admin recovery code still works
+9. Confirmation normal helper onboarding remains WhatsApp OTP only
+10. Confirmation no RTL files were modified
+11. New commit SHA
+
+Do not create an EAS build yet.

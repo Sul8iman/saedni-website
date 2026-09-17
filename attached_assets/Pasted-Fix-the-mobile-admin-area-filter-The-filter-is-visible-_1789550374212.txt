@@ -1,0 +1,61 @@
+Fix the mobile admin area filter. The filter is visible, but it does not filter the users correctly.
+
+Reproduction:
+
+1. Sign in as an admin in the iPhone app.
+2. Open Admin → Users.
+3. Select only “بوشر”.
+4. Apply the filter.
+5. Users who do not belong to or serve بوشر still appear.
+
+Expected behavior:
+
+* When only بوشر is selected:
+
+  * Customers must appear only when their primary `area` equals `بوشر`.
+  * Helpers must appear only when their parsed `preferred_areas` contains `بوشر`.
+* A helper who serves بوشر and other areas should appear, and their card may display all their configured service areas.
+* A user with no relationship to بوشر must not appear.
+* Multiple selected areas must use OR logic.
+* “بدون منطقة محددة” must return only users with no valid configured area.
+* “كل المناطق” must remove the area restriction.
+
+Required diagnosis and fix:
+
+1. Test this using a real authenticated admin session and the actual iPhone route `/(admin)/users`.
+2. Inspect the mobile network request after pressing Apply.
+3. Confirm that the selected area is actually sent to the production API:
+   `https://saedni.onrender.com/api/users`
+4. Check for a mismatch between the mobile query parameter names and the backend `/api/users` parameter names.
+5. Check URL encoding and parsing of Arabic area names.
+6. Confirm that pressing Apply:
+
+   * resets pagination to page 1;
+   * updates the active filter state;
+   * invalidates/refetches the users query;
+   * does not reuse a stale unfiltered cache entry.
+7. Ensure the query cache key contains all active filters, including selected areas, user type, status, search, and page.
+8. Verify the backend applies the filter before pagination.
+9. Parse `preferred_areas` safely because it is stored as JSON text. Do not use loose text matching that may return unrelated users.
+10. Do not perform client-side filtering over one already paginated page.
+11. Do not change the database schema or production data.
+
+Required authenticated tests:
+
+* Select only بوشر: every returned customer has `area = بوشر`, and every returned helper contains بوشر in `preferred_areas`.
+* Select only الخوض: no unrelated-area user appears.
+* Select بوشر + الخوض: return matches either area, without duplicate users.
+* Select “بدون منطقة محددة”: return only users without an area.
+* Select “كل المناطق”: return the normal unfiltered result.
+* Combine area with helper/customer type, status, search, and pagination.
+* Confirm that clearing the filter restores all users.
+
+Do not claim the issue is fixed based only on the filter being visible or on a static screenshot. Provide evidence from the actual authenticated API request and response, including the request query parameters and a privacy-safe validation showing every returned user matches the selected area.
+
+After fixing:
+
+* Run API tests and mobile typecheck.
+* Deploy the backend to Render only if the backend implementation changed.
+* Increment the iOS build number from 38 to 39.
+* Create and upload the corrected iOS build to the existing Saedni TestFlight app.
+* Keep version `1.0.9` and bundle ID `com.saedni.app`.

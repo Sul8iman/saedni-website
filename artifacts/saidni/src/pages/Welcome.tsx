@@ -3,7 +3,7 @@ import { HandHeart, Truck, ShoppingBag, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const exampleRequests = [
-  { icon: Truck, category: "نقل وتحميل", details: "نقل أغراض من بوشر إلى الغبرة", area: "بوشر", amount: 8 },
+  { icon: Truck, category: "شاحنة للنقل", details: "نقل أغراض من بوشر إلى الغبرة", area: "بوشر", amount: 8 },
   { icon: ShoppingBag, category: "شراء أغراض", details: "شراء أغراض من السوق وتوصيلها", area: "الخوير", amount: 3 },
   { icon: Wrench, category: "خدمات منزلية", details: "تركيب مكيف جديد في غرفة النوم", area: "مسقط", amount: 15 },
 ];

@@ -57,7 +57,7 @@ paths:
     post:
       operationId: login
       tags: [auth]
-      summary: Request OTP login for a selected account type
+      summary: Request OTP login (phone only)
       requestBody:
         required: false
         content:
@@ -737,36 +737,16 @@ paths:
     delete:
       operationId: deleteUser
       tags: [admin]
-      summary: Delete or anonymize a user without changing historical records
+      summary: Deactivate a user and archive their customer requests
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [confirmation]
-              properties:
-                confirmation:
-                  type: string
-                  enum: [حذف]
       responses:
-        "200":
-          description: Deleted or anonymized
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [deletionMode]
-                properties:
-                  deletionMode:
-                    type: string
-                    enum: [permanent, anonymized]
+        "204":
+          description: Deactivated and archived
 
   /admin/notifications:
     get:
@@ -849,9 +829,6 @@ components:
           type: boolean
         isBlocked:
           type: boolean
-        deletedAt:
-          type: ["string", "null"]
-          format: date-time
         lastLogin:
           type: ["string", "null"]
         otpCode:
@@ -891,13 +868,10 @@ components:
 
     LoginInput:
       type: object
-      required: [phone, userType]
+      required: [phone]
       properties:
         phone:
           type: string
-        userType:
-          type: string
-          enum: [customer, helper]
 
     VerifyOtpInput:
       type: object

@@ -1,0 +1,67 @@
+The implementation checkpoint is accepted. Keep the branch unmerged and production untouched.
+
+Proceed with the remaining isolated validation:
+
+## Full Authenticated Integration Testing
+
+Using only the isolated development environment, test the complete flows through real authenticated HTTP requests—not direct database inserts alone.
+
+Cover:
+
+1. New helper registration with no area is rejected.
+2. Registration with one or multiple active Muscat areas succeeds.
+3. Inactive and unsupported areas are rejected.
+4. Existing helper without areas is required to select an area.
+5. Helper sees only requests in selected areas.
+6. Direct access to an out-of-area request is rejected.
+7. Notifications target only eligible helpers.
+8. Phone contact is recorded before launching the call.
+9. WhatsApp contact is recorded before launching WhatsApp.
+10. Repeated contact actions produce one helper summary.
+11. The request owner can view contacted helpers and their numbers.
+12. Unrelated customers and helpers cannot retrieve those numbers.
+13. The customer can select only a helper who contacted them.
+14. Completion and rating succeed transactionally.
+15. Duplicate, self, unauthorized, and out-of-range ratings are rejected.
+16. “No help received” works with and without contacted helpers.
+17. Rating average and count update correctly.
+18. Admin filters work with authenticated admin access:
+
+    * One area
+    * Multiple areas
+    * All Areas
+    * No Area Selected
+    * Search
+    * Status
+    * Category
+    * Pagination
+19. Non-admin users cannot use protected admin capabilities.
+20. Existing historical out-of-area records remain readable to authorized admins.
+
+Run the tests without production credentials or production writes.
+
+If any issue is found:
+
+* Fix it only in `saedni-ios-update-testflight`.
+* Add regression tests.
+* Re-run all existing checks.
+* Create a new commit.
+* Keep the working tree clean.
+
+Then provide:
+
+* Exact integration-test results
+* Any defects found and fixed
+* Final commit ID
+* Clean working-tree confirmation
+* A production rollout plan in this order:
+
+  1. Verified backup/PITR availability
+  2. Migration review
+  3. Production migration
+  4. Backend deployment
+  5. Production smoke tests
+  6. Signed iOS build
+  7. TestFlight upload
+
+Do not execute the production rollout, merge the branch, create a signed build, or upload to TestFlight without explicit approval.

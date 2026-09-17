@@ -8,4 +8,17 @@
 
 export type ListUsersParams = {
 userType?: string;
+area?: string[];
+includeNoArea?: boolean;
+search?: string;
+isActive?: boolean;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
 };

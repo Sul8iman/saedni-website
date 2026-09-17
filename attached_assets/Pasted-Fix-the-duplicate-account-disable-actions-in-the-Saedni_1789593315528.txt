@@ -1,0 +1,98 @@
+Fix the duplicate account-disable actions in the Saedni iPhone admin user profile.
+
+Current defect:
+
+The admin user profile displays two actions that both represent or perform “تعطيل الحساب”.
+
+Required actions:
+
+## 1. Disable/enable account
+
+Display:
+
+- تعطيل الحساب — when the account is active
+- تفعيل الحساب — when the account is disabled
+
+Behavior:
+
+- Disabling is reversible.
+- Set the existing blocked/disabled state.
+- Revoke the current authentication token/session.
+- A disabled user must not log in, request OTP, create requests, or view helper requests.
+- Re-enabling restores access according to the existing verification status.
+- Do not delete the user’s profile, requests, contacts, or ratings.
+
+## 2. Delete account
+
+Replace the duplicate disable action with:
+
+حذف الحساب
+
+UI requirements:
+
+- Use a red destructive-action style.
+- Show a confirmation dialog:
+
+  حذف الحساب؟
+  لا يمكن التراجع عن هذا الإجراء. سيتم حذف الحساب وفق سياسة حفظ السجلات المرتبطة.
+
+- Buttons:
+  - إلغاء
+  - حذف الحساب
+
+- Require a second confirmation or typing “حذف” before final deletion.
+- Prevent an admin from deleting their own currently logged-in account.
+- Prevent non-admin users from calling the deletion endpoint.
+
+## 3. Deletion behavior
+
+Inspect the existing backend delete endpoint before changing the UI.
+
+Do not label a soft-disable action as “حذف الحساب”.
+
+The final behavior must be explicit:
+
+- If the user has no related requests, contacts, ratings, or required audit records:
+  - permanently delete the user account.
+- If the user has related historical records that must be preserved:
+  - remove login access and personal profile data;
+  - anonymize personal fields where technically possible;
+  - preserve required historical request, contact, rating, and audit integrity;
+  - mark the account as deleted, not merely blocked;
+  - exclude it from normal active-user lists;
+  - show “حساب محذوف” in historical records.
+
+Do not cascade-delete legitimate customer requests, helper contacts, ratings, or audit history merely because an account is deleted.
+
+If the current schema cannot distinguish blocked from deleted accounts, stop and report the smallest safe schema change required before implementing deletion. Do not silently reuse `isBlocked` as deletion state.
+
+## 4. After deletion
+
+- Remove the user from normal Users Management results.
+- Refresh user counts and area statistics.
+- Preserve a deleted-user audit event with:
+  - deleted user ID;
+  - admin ID;
+  - date/time;
+  - deletion mode.
+- Never store passwords, OTP values, or auth tokens in the audit record.
+- Return the admin to the Users list with a success message.
+
+## 5. Testing
+
+Test only in an isolated development/test database using synthetic accounts. Do not delete any production user while testing.
+
+Verify:
+
+- Active account shows تعطيل الحساب and حذف الحساب.
+- Disabled account shows تفعيل الحساب and حذف الحساب.
+- Disable is reversible.
+- Delete requires confirmation.
+- Admin cannot delete themselves.
+- Non-admin cannot delete users.
+- Deleted account cannot authenticate.
+- Related historical records remain valid.
+- Counts and lists refresh after deletion.
+- The two buttons no longer call the same action.
+
+Run API tests and mobile typechecks. Verify the actual authenticated iPhone admin profile before creating the next iOS build.

@@ -1,0 +1,93 @@
+The latest update caused a new RTL regression on iPhone.
+
+Confirmed facts:
+- The previous iOS build displayed Arabic correctly.
+- The latest iOS build now shows Arabic on the left.
+- Recent ArabicText/RTL changes were originally introduced to fix Android.
+- Therefore, Android-specific RTL experiments must not alter iOS behavior.
+
+Do not add more global RTL changes.
+
+Tasks:
+
+1. Identify the exact last iOS commit/build where Arabic RTL worked correctly.
+
+2. Compare that working iOS version with the current commit, focusing on:
+   - components/ArabicText.tsx
+   - components/ArabicTextInput.tsx
+   - components/SectionLabel.tsx
+   - app/_layout.tsx
+   - app.json
+   - expo-localization settings
+   - all recent replacements from Text to ArabicText
+
+3. Find the exact commit that introduced the iOS regression.
+
+4. Restore the previous working iOS behavior.
+
+5. Make Android-specific fixes platform-specific using Platform.OS.
+
+Required behavior:
+
+For iOS:
+- Use the exact RTL styles/configuration from the last working iOS build.
+- Do not apply Android diagnostic width/stretch/border logic.
+- Preserve the existing iOS expo-localization behavior.
+- No custom Android plugin or Android-only workaround may affect iOS.
+
+For Android:
+- Keep Android fixes isolated using:
+  Platform.OS === "android"
+
+Example pattern:
+
+const rtlTextBase = Platform.select({
+  ios: {
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
+  android: {
+    textAlign: "right",
+    // only Android-specific properties proven necessary
+  },
+});
+
+6. Remove all temporary diagnostic borders, onLayout logs, width logs, and debug styling from both platforms.
+
+7. Do not blindly keep:
+   alignSelf: "stretch"
+   width: "100%"
+   flex: 1
+on iOS unless those properties already existed in the last working iOS version.
+
+8. Test the same screens on both platforms:
+- Login
+- Register
+- Home
+- New Request
+- Available Requests
+- Profile
+- Admin user details
+
+9. Before building, report:
+- Last working iOS commit/build
+- Commit that introduced the regression
+- Exact file and style responsible
+- Before/after diff
+- Which styles are iOS-specific
+- Which styles are Android-specific
+
+10. Create an iOS preview/TestFlight build first.
+Do not submit directly to the App Store.
+
+11. Keep the new helper activation-code feature unchanged:
+- code does not expire
+- regenerate-code works
+- code shown once to admin
+- copy button works
+
+12. Push only to:
+Sul8iman/saedni
+branch: main
+
+Do not push application changes to saedni-website.

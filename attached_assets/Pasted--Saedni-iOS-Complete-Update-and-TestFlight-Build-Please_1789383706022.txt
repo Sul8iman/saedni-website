@@ -1,0 +1,487 @@
+# Saedni iOS – Complete Update and TestFlight Build
+
+Please implement a new production-ready iOS build of the existing Saedni application with all requirements below.
+
+Work directly on the current project. Review the implementation first, then make the changes, test them, and prepare the new iOS build. Do not only provide recommendations or sample code.
+
+## 1. Review and Safety Before Implementation
+
+Before changing anything:
+
+1. Review the existing codebase and architecture.
+2. Review the database schema and relationships.
+3. Review authentication and backend authorization.
+4. Review customer registration, helper registration, request creation, contact, notification, completion, and profile flows.
+5. Review the admin dashboard and existing filters.
+6. Create a safe backup or restore point before running migrations.
+7. Preserve all existing users, requests, contact records, preferences, and historical data.
+8. Use safe and reversible database migrations.
+9. Do not reset, replace, or delete the production database.
+10. Do not introduce unrelated design or functionality changes.
+
+---
+
+# 2. Restrict the Service to Muscat
+
+Saedni must operate only within Muscat Governorate.
+
+Remove these location options from all new selections:
+
+* صور
+* صحار
+* نزوى
+* صلالة
+* أخرى
+
+Remove them from:
+
+* Customer registration
+* Helper registration
+* Request creation
+* Search and filters
+* Customer profiles
+* Helper profiles
+* Profile editing
+* Notification preferences
+* Admin forms
+* Every other location selector
+
+Requirements:
+
+* Keep all existing Muscat areas currently available in the application.
+* Enforce the Muscat-only restriction on both the frontend and backend.
+* Reject unsupported locations submitted directly through the API.
+* Do not delete historical users or requests associated with locations outside Muscat.
+* Mark unsupported locations as inactive and unavailable for new selections.
+* Keep historical records using old locations visible in the admin dashboard.
+* Remove “أخرى” only when it is a location option. Do not remove unrelated “أخرى” options used for service categories or other purposes.
+
+---
+
+# 3. Helper Service Areas
+
+## New Helper Registration
+
+Every new helper must:
+
+* Select at least one service area within Muscat.
+* Be allowed to select multiple service areas.
+* Be prevented from completing registration without selecting an area.
+* Receive a clear Arabic validation message when no area is selected.
+
+## Existing Helpers
+
+* Do not assign service areas automatically to existing helpers.
+* If an existing helper has no saved service area, require them to select at least one Muscat area on their next login.
+* Do not allow them to view available requests until they select and save at least one area.
+
+## Helper Profile
+
+Helpers must be able to:
+
+* View their selected service areas.
+* Add more Muscat service areas.
+* Remove selected areas.
+* Save changes from their profile.
+
+A helper must always have at least one selected service area.
+
+## Request Visibility
+
+* Customers must select one specific Muscat area when creating a request.
+* Helpers must only see requests belonging to one of their selected areas.
+* Apply this filtering through backend/database queries, not only in the interface.
+* Refresh the request list after a helper changes their selected areas.
+* Prevent helpers from accessing out-of-area requests by manually changing an API request or request ID.
+* Preserve the selected areas across sessions.
+
+## Notifications
+
+* Send request notifications only to helpers who selected the request’s area.
+* Do not notify helpers about requests outside their service areas.
+* Enforce notification targeting on the backend.
+
+---
+
+# 4. Record Helpers Who Contact Customers
+
+Maintain a reliable backend record of every helper who contacts a customer through a request.
+
+When a helper uses the phone or WhatsApp contact action, record:
+
+* Request ID
+* Helper ID
+* Customer ID
+* Contact method: phone or WhatsApp
+* The contact number used
+* Date and time of first contact
+* Latest contact time, if needed
+
+Requirements:
+
+* Store contact events on the backend.
+* Do not rely only on frontend or local device data.
+* Confirm the helper is authorized to view the request before recording the contact.
+* Prevent duplicate contacted-helper entries for the same helper and request.
+* Repeated contact attempts may update the latest contact time but must not create duplicate list entries.
+* If the required table or collection does not exist, create it with a safe database migration.
+* Use these backend records to determine which helpers appear when the customer completes the request.
+
+---
+
+# 5. Display Contacted Helpers and Their Numbers
+
+When displaying the contacted-helpers list, do not show only the helper’s name and contact method.
+
+Every contacted-helper entry must display:
+
+* Helper’s name
+* Profile image, if available
+* Contact method: phone or WhatsApp
+* Actual contact phone number
+* Average star rating
+* Total number of ratings
+
+Requirements:
+
+* Display the contact number clearly below or beside the contact method.
+* If the WhatsApp number differs from the regular phone number, display the number used for that contact method.
+* Format Oman phone numbers consistently.
+* Allow the customer to tap a phone number to start a call.
+* Allow the customer to tap a WhatsApp number to open WhatsApp.
+* Retrieve the number securely from verified helper profile data or the validated contact record.
+* If no valid number is available, display a clear Arabic message instead of an empty field.
+* Only the owner of the request and authorized administrators may view these numbers.
+* Do not expose helper phone numbers in public profiles or unauthorized API responses.
+
+---
+
+# 6. Request Completion Flow
+
+Implement this flow:
+
+1. The customer chooses to complete their request.
+2. The application retrieves the helpers who contacted the customer through that request.
+3. The application displays each contacted helper’s name, image, contact method, contact number, average rating, and rating count.
+4. The customer selects the helper who completed the work.
+5. The customer rates the selected helper from 1 to 5 stars.
+6. The application securely saves the selected helper and rating.
+7. The request is marked as completed with help received.
+8. The helper’s average rating and rating count are updated.
+
+Only helpers with a valid backend contact record for that specific request may appear in the selection list.
+
+## No Help Received
+
+If helpers contacted the customer but no one completed the work:
+
+* Display a “No help received” option.
+* Allow the customer to close the request without selecting or rating a helper.
+* Record the request as completed without help received.
+
+If no helper contacted the customer:
+
+* Allow the customer to close the request directly as “No help received.”
+* Do not require a rating.
+
+Process completion, helper selection, and rating safely so partial or inconsistent database records cannot be created.
+
+---
+
+# 7. Helper Rating System
+
+The customer must be able to rate the selected helper using stars only.
+
+Requirements:
+
+* Use a rating scale from 1 to 5 stars.
+* Do not include written comments or text reviews.
+* Allow only one rating per request.
+* Prevent duplicate rating submissions.
+* Prevent helpers from rating themselves.
+* Only the request owner can submit the rating.
+* The selected helper must have contacted the customer through that request.
+* Validate all rules on the backend.
+* Store the star value as an integer from 1 to 5.
+* Recalculate the helper’s average rating and total rating count after every valid rating.
+
+Store:
+
+* Unique rating ID
+* Request ID
+* Customer ID
+* Helper ID
+* Star value
+* Creation date and time
+
+Add a database-level unique constraint, where supported, to ensure only one rating can exist for each request.
+
+Do not trust customer IDs, helper IDs, ownership, or eligibility received only from the frontend. Verify everything from authenticated backend data.
+
+A submitted rating must not be editable or submitted again unless the existing admin system already has an authorized correction process.
+
+---
+
+# 8. Display Helper Ratings
+
+Display each helper’s average star rating and total rating count:
+
+* In the contacted-helpers list
+* In the helper’s profile
+* Wherever helper information is already displayed to customers without requiring an unrelated redesign
+
+Use a consistent format such as:
+
+`★ 4.8 (12)`
+
+If the helper has no ratings, display:
+
+`جديد`
+
+or:
+
+`لا توجد تقييمات بعد`
+
+Do not display written reviews.
+
+---
+
+# 9. Rename Services
+
+Update these Arabic service names:
+
+* Change “نقل وتحميل” to “شاحنة للنقل”
+* Change “مشاوير وتوصيل” to “مندوب توصيل”
+
+Apply the changes everywhere, including:
+
+* Home screen
+* Customer registration
+* Helper registration
+* Request creation
+* Search and filters
+* Request cards
+* Request details
+* Helper profiles
+* Notifications
+* Admin dashboard
+* Localization files
+* Static labels
+* Database-facing labels
+
+Requirements:
+
+* Keep existing internal service IDs unchanged whenever possible.
+* Do not create duplicate services.
+* Existing requests, helper preferences, analytics, and historical records must continue working.
+* Migrate IDs only if technically necessary and preserve all existing relationships.
+
+---
+
+# 10. Service Icons
+
+Update the service icons:
+
+* Use a clear truck icon for “شاحنة للنقل.”
+* Use a clear delivery-person or courier icon for “مندوب توصيل.”
+
+Requirements:
+
+* Use icons from the application’s existing icon library.
+* Match the existing icon style, size, color, and alignment.
+* Do not use emoji.
+* Do not add a different icon library unless technically necessary.
+* Display the correct icons everywhere these services appear, including the home screen, forms, filters, request cards, profiles, and admin dashboard.
+
+---
+
+# 11. Service Display Order
+
+Make “مندوب توصيل” the first service option.
+
+Because the application uses an Arabic RTL layout:
+
+* “مندوب توصيل” must appear as the first option on the right.
+* Update the actual service sorting/order value.
+* Do not use a temporary visual workaround.
+* Apply the same order consistently across all service lists.
+* Keep existing service IDs unchanged.
+* Do not create duplicate categories.
+
+---
+
+# 12. Admin Dashboard – Filter Helpers by Area
+
+Update the helpers management page so administrators can filter helpers by their selected Muscat service areas.
+
+Requirements:
+
+* Add a service-area filter.
+* Allow selection of one area.
+* Allow selection of multiple areas.
+* When one area is selected, show all helpers who serve that area.
+* When multiple areas are selected, show helpers who serve at least one selected area.
+* Do not display duplicate helpers.
+* Add an “All Areas” option.
+* Add a “No Area Selected” option for existing helpers without saved areas.
+* Display each helper’s selected areas in their table row or profile details.
+* Apply filtering through a backend/database query, not only to currently loaded frontend data.
+* Preserve the filter across paginated pages.
+* Make it work together with:
+
+  * Name or phone search
+  * Account status filters
+  * Service-category filters
+  * Pagination
+* Do not allow administrators to assign unsupported locations outside Muscat.
+
+---
+
+# 13. UI Requirements
+
+* Maintain the existing Arabic RTL interface.
+* Preserve Saedni’s branding, colors, navigation, and visual identity.
+* Use clear Arabic labels and validation messages.
+* Support all currently supported iPhone screen sizes.
+* Correctly handle iOS safe areas.
+* Ensure keyboards, scrolling, modals, and bottom navigation work correctly.
+* Keep phone numbers correctly aligned and readable in RTL layouts.
+* Do not introduce unrelated redesigns.
+* Do not remove existing functionality unless explicitly required above.
+
+---
+
+# 14. Backend Security and Data Integrity
+
+Enforce these rules on the backend:
+
+* Only the request owner can complete their request.
+* Only the request owner can view the contacted-helper list and contact numbers.
+* Authorized administrators may view contact information where required.
+* Only the request owner can select and rate a helper.
+* The selected helper must have contacted the customer through that request.
+* A user cannot select or rate themselves.
+* Ratings must be integers from 1 to 5.
+* Duplicate ratings must be rejected.
+* Helpers cannot view requests outside their selected areas.
+* Helpers cannot receive notifications for unselected areas.
+* Unsupported locations cannot be submitted for new accounts, requests, or profile updates.
+* Unauthorized users cannot retrieve helper phone numbers.
+* Users cannot modify another user’s profile, selected areas, contacts, or ratings.
+* Existing historical data must remain intact.
+
+---
+
+# 15. Testing Requirements
+
+Test and confirm all the following.
+
+## Locations
+
+* صور, صحار, نزوى, صلالة, and the location option أخرى are unavailable for new selections.
+* Existing historical records using them remain intact.
+* The backend rejects unsupported locations.
+* Existing Muscat areas remain available.
+
+## Helper Areas
+
+* A new helper cannot register without selecting an area.
+* A helper can select one or multiple Muscat areas.
+* A helper can update their areas.
+* A helper cannot remove all selected areas.
+* Existing helpers without areas are required to select one.
+* Helpers only see and receive notifications for selected areas.
+* Out-of-area API access is rejected.
+
+## Contact Tracking and Numbers
+
+* Phone contact actions are recorded.
+* WhatsApp contact actions are recorded.
+* The contact number used is stored or retrieved correctly.
+* Repeated contact actions do not create duplicate entries.
+* Unauthorized contact events are rejected.
+* Every contacted-helper entry displays the correct number.
+* The correct number appears for both phone and WhatsApp.
+* Tapping the number launches the correct action.
+* Unauthorized users cannot retrieve the number.
+* Helpers who did not contact the customer cannot be selected or rated.
+
+## Request Completion
+
+* Only the request owner can complete the request.
+* Contacted helpers appear correctly.
+* The customer can select the helper who completed the work.
+* “No help received” works with or without contacted helpers.
+* Closing without help does not require a rating.
+* No partial or inconsistent completion data is created.
+
+## Ratings
+
+* Customers can submit 1-to-5-star ratings.
+* No written comment is required or displayed.
+* Duplicate ratings are rejected.
+* Self-rating is rejected.
+* Invalid values are rejected.
+* Average ratings and rating counts are correct.
+* Updated ratings appear after submission.
+* “جديد” or “لا توجد تقييمات بعد” appears when appropriate.
+
+## Services and Icons
+
+* “شاحنة للنقل” replaces “نقل وتحميل.”
+* “مندوب توصيل” replaces “مشاوير وتوصيل.”
+* “شاحنة للنقل” uses a truck icon.
+* “مندوب توصيل” uses a delivery-person or courier icon.
+* “مندوب توصيل” is the first option on the right in RTL layouts.
+* Names, icons, and ordering are consistent throughout the application and admin dashboard.
+* Existing service IDs and historical records continue working.
+
+## Admin Dashboard
+
+* Filtering by one area returns the correct helpers.
+* Filtering by multiple areas returns helpers serving any selected area.
+* Helpers appear only once.
+* “All Areas” displays all helpers.
+* “No Area Selected” displays only helpers without areas.
+* The area filter works with search, status, categories, and pagination.
+* Filters remain active while navigating between pages.
+
+## iOS
+
+* The application compiles without errors.
+* Existing automated tests pass.
+* New automated tests cover critical backend rules.
+* Type checks and linting pass.
+* Registration, request creation, contacts, completion, and rating flows are manually tested on iOS.
+* The interface works on multiple iPhone screen sizes.
+* No existing feature is unintentionally broken.
+
+---
+
+# 16. Final Delivery
+
+After implementation:
+
+1. Increase the iOS build number.
+2. Update the app version if required.
+3. Run all automated tests.
+4. Run type checks, linting, and production build checks.
+5. Fix errors introduced by these changes.
+6. Produce a release-ready iOS build suitable for TestFlight.
+7. Do not publish the build to production without explicit approval.
+
+Provide a concise completion report containing:
+
+* Files changed
+* Database schema changes
+* Migrations created
+* Whether migrations were executed
+* Backend and API changes
+* Updated application screens
+* Updated admin dashboard screens
+* Tests performed and results
+* iOS version number
+* iOS build number
+* TestFlight preparation status
+* Remaining issues
+* Manual steps required before TestFlight upload

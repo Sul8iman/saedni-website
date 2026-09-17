@@ -5,8 +5,8 @@
  * ساعدني - API specification for the Oman help marketplace
  * OpenAPI spec version: 0.1.0
  */
-import type { DeleteUser200DeletionMode } from './deleteUser200DeletionMode';
 
-export type DeleteUser200 = {
-  deletionMode: DeleteUser200DeletionMode;
-};
+/**
+ * Zero-safe aggregate metrics; no personal data is included.
+ */
+export interface AdminStatistics { [key: string]: unknown }

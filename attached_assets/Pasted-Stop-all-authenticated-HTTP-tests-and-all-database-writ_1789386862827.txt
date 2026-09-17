@@ -1,0 +1,72 @@
+Stop all authenticated HTTP tests and all database writes immediately.
+
+The statement “no production data was changed” is not yet verified. Two accounts were created and then deactivated in an unidentified external Supabase database. Until that database is identified, treat it as potentially production.
+
+## 1. Identify the Connected Database Safely
+
+Using read-only inspection only:
+
+* Identify which environment variable or configuration source supplies the API database connection.
+* Report the Supabase project reference or a safely redacted hostname.
+* Do not display database passwords, API keys, service-role keys, JWT secrets, or complete connection strings.
+* Compare the project reference with any documented development, staging, and production project references.
+* Report whether the database is development, staging, production, or still unknown.
+* Check whether mobile, web, API, and mockup workflows share the same database configuration.
+
+Do not change any secrets or environment variables yet.
+
+## 2. Document the External Writes Accurately
+
+For accounts `539` and `540`, use read-only queries to report:
+
+* Creation timestamp
+* Current status
+* Whether they are soft-deactivated or deleted
+* Which fields were changed during cleanup
+* Whether authentication identities were also created
+* Whether any related rows exist in other tables
+* Whether notifications, logs, audit records, or analytics events were generated
+* Confirmation that no requests, contacts, ratings, or other business records were created
+
+Do not delete, reactivate, or modify these accounts until the database environment is identified and I approve the cleanup method.
+
+Do not expose names, phone numbers, tokens, or other personal data in the report.
+
+## 3. Preserve Evidence
+
+Record:
+
+* The time of the test
+* Endpoints called
+* HTTP methods used
+* Account IDs created
+* Cleanup calls performed
+* The database project reference in redacted form
+* Relevant log timestamps
+
+Do not alter existing recovery files or Task #23.
+
+## 4. Correct the Status Wording
+
+Until the database is identified, report:
+
+“Production impact is unconfirmed. Two disposable accounts were created and deactivated in an unidentified external Supabase database. No other known business records were created.”
+
+Do not claim that production was untouched.
+
+## 5. Prepare a Truly Isolated Test Environment
+
+After completing the read-only identification report:
+
+* Do not apply the migration to the external database.
+* Do not redirect the existing production-like workflow blindly.
+* Prepare a separate API test workflow connected only to a disposable database.
+* Use separate development credentials.
+* Do not overwrite or reveal existing production secrets.
+* Apply the migration only after confirming the disposable database identity.
+* Seed only synthetic test data.
+* Re-run the authenticated test matrix there.
+
+If a verified disposable database or its credentials are unavailable, stop and report that as the blocker. Do not continue testing against the external Supabase database.
+
+Keep the branch unmerged and do not start production migration, signing, or TestFlight work.

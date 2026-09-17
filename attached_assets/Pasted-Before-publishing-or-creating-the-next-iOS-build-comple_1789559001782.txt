@@ -1,0 +1,122 @@
+Before publishing or creating the next iOS build, complete these additional mobile changes. Do not start Expo Launch until all items are verified in the actual iPhone app.
+
+## 1. Customer profile area wording
+
+In the customer profile, change:
+
+اختار منطقتك لتصلك الطلبات
+
+to:
+
+اختر منطقتك
+
+The phrase “لتصلك الطلبات” is incorrect for customers because customers do not receive requests.
+
+Check spelling everywhere and use:
+اختر
+not:
+اختار
+
+## 2. Customer multiple-area selection
+
+Allow customers to select and save more than one Muscat area in their profile.
+
+Requirements:
+
+- Use the same active 16 Muscat areas.
+- Allow selecting one or multiple areas.
+- Display selected areas clearly in the customer profile.
+- Customers must be able to edit their selected areas later.
+- Validate selected areas on both mobile and backend.
+- Do not accept inactive or outside-Muscat areas.
+- Reuse the existing `preferred_areas` field if technically compatible; do not create a database migration unnecessarily.
+- Preserve the existing primary `area` field for backward compatibility.
+- Existing customer accounts must continue working without forced data loss.
+
+Important distinction:
+
+- A customer may save multiple preferred/profile areas.
+- Each individual help request must still have one specific area only.
+- Do not allow a single request to belong to multiple areas.
+- Helper request visibility must continue using the single area selected for that request.
+
+## 3. Rename service categories
+
+The previous renaming has not appeared in the actual iPhone app. Update the visible Arabic labels everywhere:
+
+- Change:
+  نقل وتحميل
+  to:
+  شاحنة للنقل
+
+- Change:
+  مشاوير وتوصيل
+  to:
+  مندوب توصيل
+
+Requirements:
+
+- Keep the underlying service/category IDs unchanged so historical requests and preferences continue working.
+- Update labels everywhere in the iPhone app:
+  - Customer request creation
+  - Helper available requests
+  - Request cards
+  - Request details
+  - Customer history
+  - Helper profile/category selection
+  - Filters
+  - Admin mobile screens
+  - Notifications
+  - Empty states and validation messages
+- Update backend-facing display labels and notification text where necessary.
+- Existing historical requests using the old IDs must display the new labels.
+- Do not rewrite or delete historical request records.
+- Use a truck icon for `شاحنة للنقل`.
+- Use a courier/delivery-person icon for `مندوب توصيل`.
+- Make `مندوب توصيل` the first/rightmost category in the Arabic RTL category list.
+
+## 4. Diagnose why the old labels remain
+
+Do not only edit one constants file.
+
+Search the full mobile/API codebase for:
+
+- نقل وتحميل
+- مشاوير وتوصيل
+
+Identify all hardcoded copies and mappings. Confirm whether the app is using:
+
+- stale constants;
+- backend-provided labels;
+- historical database values;
+- cached Expo bundles;
+- separate customer/helper category definitions.
+
+Create one canonical category mapping and use it consistently while preserving the original category IDs.
+
+## 5. Verification before build
+
+Verify in the actual authenticated iPhone app:
+
+1. Customer profile shows only:
+   اختر منطقتك
+2. Customer can select, save, reopen, and edit multiple areas.
+3. Creating a request still requires exactly one area.
+4. `مندوب توصيل` appears first/rightmost.
+5. `شاحنة للنقل` uses the truck icon.
+6. `مندوب توصيل` uses the courier icon.
+7. No old service label appears anywhere in the mobile app.
+8. Historical requests display the new service labels.
+9. The request-list synchronization fix remains working.
+10. Existing helper area filtering and admin area filtering remain working.
+
+Run a repository-wide search after the fix and report any intentional remaining old labels. Run API tests, mobile typecheck, and a clean Metro restart.
+
+Do not create or upload the iOS build until screenshots from the actual mobile routes confirm these changes.
+
+After all verification succeeds:
+
+- Use the next unused iOS build number.
+- Keep version 1.0.9.
+- Keep bundle ID com.saedni.app.
+- Upload the corrected build to the existing Saedni TestFlight app.

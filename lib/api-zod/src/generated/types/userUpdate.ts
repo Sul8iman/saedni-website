@@ -14,4 +14,5 @@ export interface UserUpdate {
   helperInterests?: string | null;
   /** @nullable */
   preferredAreas?: string | null;
+  serviceAreas?: string[];
 }

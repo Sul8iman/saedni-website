@@ -5,11 +5,13 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts"
+    "./schema": "./src/schema/index.ts",
+    "./test-safety": "./src/test-safety.ts"
   },
   "scripts": {
-    "push": "drizzle-kit push --config ./drizzle.config.ts",
-    "push-force": "drizzle-kit push --force --config ./drizzle.config.ts"
+    "push": "APP_ENV=development pnpm exec tsx ./src/guarded-db-command.ts && APP_ENV=development drizzle-kit push --config ./drizzle.config.ts",
+    "push-force": "APP_ENV=development pnpm exec tsx ./src/guarded-db-command.ts && APP_ENV=development drizzle-kit push --force --config ./drizzle.config.ts",
+    "test": "node --test src/test-safety.test.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",

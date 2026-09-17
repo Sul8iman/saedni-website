@@ -1,0 +1,85 @@
+Enhance the area filter in the Saedni iPhone admin Users screen by displaying user counts for every area.
+
+The iPhone app is the primary target.
+
+Required design:
+
+Display each area as a selectable row/card:
+
+بوشر
+20 مساعدًا · 5 عملاء
+
+Show:
+- Area name
+- Number of helpers serving that area
+- Number of customers whose primary area is that area
+- Selection indicator/checkmark
+- Selected state using the existing Saedni colors
+
+Also display:
+
+جميع المناطق
+[total helpers] مساعدًا · [total customers] عميلًا
+
+بدون منطقة محددة
+[helpers without areas] مساعدًا · [customers without an area] عميلًا
+
+Counting rules:
+
+1. A customer is counted only under their primary `area`.
+2. A helper is counted under every valid area contained in `preferred_areas`.
+3. Count each helper only once within the same area, even if their stored data contains duplicates.
+4. Do not add area counts together to calculate the total helper count because one helper may serve multiple areas.
+5. Exclude inactive historical areas from the selectable list.
+6. Counts must come from the backend and must not be calculated only from the currently loaded paginated users.
+7. Do not expose names, phone numbers, or other personal data in the count response.
+8. Counts should respect the currently selected account status filter:
+   - All
+   - Active
+   - Blocked
+9. Search text should not change the area counts. Area counts represent the available user population for the selected status.
+10. Selecting an area must continue using the existing working backend filter.
+
+Backend:
+
+- Add an authorized admin-only aggregate endpoint, preferably:
+  GET /api/users/area-counts?status=...
+- Return, for every active area:
+  - area
+  - helperCount
+  - customerCount
+- Also return:
+  - total helper/customer counts
+  - no-area helper/customer counts
+- Apply admin authorization.
+- Use aggregate/database queries rather than downloading all user records.
+- Parse helper `preferred_areas` safely from its JSON-text format.
+- Do not modify the database schema or production data.
+
+Mobile:
+
+- Add the counts to the actual iPhone route `/(admin)/users`.
+- Show the counts inside the area-selection sheet beneath each area name.
+- Preserve multiple selection and OR logic.
+- Keep the Arabic RTL layout.
+- Include loading, error, and refresh states.
+- Do not block use of the filter if count loading fails.
+- Refresh counts after user activation, blocking, or profile-area changes.
+
+Verification:
+
+- Verify بوشر’s displayed counts against authenticated backend aggregate results.
+- Verify customers are counted only in their primary area.
+- Verify multi-area helpers appear in every area they serve but only once per area.
+- Verify “جميع المناطق” totals use unique users.
+- Verify “بدون منطقة محددة”.
+- Verify active/blocked status changes the counts correctly.
+- Run API tests, API/mobile typechecks, and the production builds.
+- Deploy the backend to Render and verify the production endpoint.
+- Confirm the counts visually in the actual authenticated iPhone admin screen.
+
+Release:
+
+- Because this changes the iPhone interface, increment the iOS build number from 38 to 39.
+- Keep version 1.0.9 and bundle ID com.saedni.app.
+- After production verification, create and upload build 39 to the existing Saedni TestFlight app.

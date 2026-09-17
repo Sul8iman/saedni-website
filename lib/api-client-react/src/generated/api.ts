@@ -29,8 +29,6 @@ import type {
   AdminStats,
   AuthResponse,
   ContactedHelper,
-  DeleteUser200,
-  DeleteUserBody,
   GetAdminStatisticsParams,
   HealthStatus,
   HelpRequest,
@@ -227,7 +225,7 @@ export const getLoginUrl = () => {
 }
 
 /**
- * @summary Request OTP login for a selected account type
+ * @summary Request OTP login (phone only)
  */
 export const login = async (loginInput?: LoginInput, options?: RequestInit): Promise<OtpRequestResponse> => {
 
@@ -276,7 +274,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type LoginMutationError = ErrorType<void>
 
     /**
- * @summary Request OTP login for a selected account type
+ * @summary Request OTP login (phone only)
  */
 export const useLogin = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data?: BodyType<LoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -2447,18 +2445,16 @@ export const getDeleteUserUrl = (id: number,) => {
 }
 
 /**
- * @summary Delete or anonymize a user without changing historical records
+ * @summary Deactivate a user and archive their customer requests
  */
-export const deleteUser = async (id: number,
-    deleteUserBody: DeleteUserBody, options?: RequestInit): Promise<DeleteUser200> => {
+export const deleteUser = async (id: number, options?: RequestInit): Promise<void> => {
 
-  return customFetch<DeleteUser200>(getDeleteUserUrl(id),
+  return customFetch<void>(getDeleteUserUrl(id),
   {
     ...options,
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      deleteUserBody,)
+    method: 'DELETE'
+
+
   }
 );}
 
@@ -2466,8 +2462,8 @@ export const deleteUser = async (id: number,
 
 
 export const getDeleteUserMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,{id: number;data: BodyType<DeleteUserBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,{id: number;data: BodyType<DeleteUserBody>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,{id: number}, TContext> => {
 
 const mutationKey = ['deleteUser'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -2479,10 +2475,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteUser>>, {id: number;data: BodyType<DeleteUserBody>}> = (props) => {
-          const {id,data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteUser>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
 
-          return  deleteUser(id,data,requestOptions)
+          return  deleteUser(id,requestOptions)
         }
 
 
@@ -2493,18 +2489,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type DeleteUserMutationResult = NonNullable<Awaited<ReturnType<typeof deleteUser>>>
-    export type DeleteUserMutationBody = BodyType<DeleteUserBody>
+
     export type DeleteUserMutationError = ErrorType<unknown>
 
     /**
- * @summary Delete or anonymize a user without changing historical records
+ * @summary Deactivate a user and archive their customer requests
  */
 export const useDeleteUser = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,{id: number;data: BodyType<DeleteUserBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof deleteUser>>,
         TError,
-        {id: number;data: BodyType<DeleteUserBody>},
+        {id: number},
         TContext
       > => {
       return useMutation(getDeleteUserMutationOptions(options));

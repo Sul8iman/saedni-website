@@ -1,0 +1,87 @@
+Before closing the work, correct the task status and provide the complete implementation evidence.
+
+## 1. Correct Task #23 Status
+
+Task #23, “Prepare safe recovery for missing requests,” was paused and was not completed.
+
+No missing requests were recovered because Supabase backup/PITR evidence was unavailable. Therefore:
+
+* Change Task #23 back to “Paused” or “Blocked.”
+* Do not describe it as completed.
+* Keep its recovery baseline and unexecuted SQL template unchanged.
+* Do not perform any production recovery or production database writes.
+
+The completed work belongs to the separate Saedni iOS update branch.
+
+## 2. Clarify the Build Result
+
+An Expo static export is useful validation, but it is not automatically a TestFlight-ready `.ipa` build.
+
+Clearly state which of the following was completed:
+
+* Expo static JavaScript export only
+* iOS native archive
+* EAS/Replit Expo Launch iOS build
+* Signed `.ipa` suitable for TestFlight
+* Actual TestFlight upload
+
+Do not claim that the app is ready for TestFlight unless a signed iOS build was successfully produced with the correct Apple credentials, bundle identifier, provisioning profile, version, and build number.
+
+Do not upload or publish anything without explicit approval.
+
+## 3. Run Isolated Database Validation
+
+Proceed with the suggested task:
+
+“Validate the new request safeguards in an isolated database.”
+
+Use only a disposable development/test database.
+
+Test:
+
+* Migration applies successfully from the current baseline.
+* Migration can be safely rolled back before release.
+* Existing historical rows remain unchanged.
+* Active and inactive areas behave correctly.
+* Malformed `preferred_areas` values do not crash queries.
+* Helper area visibility is enforced by the backend.
+* Out-of-area direct request access is rejected.
+* Contact recording is idempotent.
+* Each contacted helper appears only once.
+* Contact numbers are visible only to the request owner and authorized admin.
+* Unauthorized phone-number access is rejected.
+* Only contacted helpers can be selected.
+* Completion and rating are atomic.
+* Duplicate ratings are rejected.
+* No-help completion works without a rating.
+* Rating averages and counts remain consistent.
+* Admin area filtering works with multiple areas, search, status, category, and pagination.
+
+Do not run the migration against production.
+
+## 4. Provide the Final Report
+
+After isolated validation, provide:
+
+* Current branch name
+* Latest checkpoint or commit identifier
+* Complete list of changed files
+* Final migration filename and SQL summary
+* Database tables, columns, constraints, foreign keys, indexes, and RLS/access rules added
+* API endpoints added or changed
+* Mobile screens changed
+* Admin screens changed
+* Final active Muscat-area list
+* Confirmation that unsupported locations remain historical-only
+* Confirmation that service IDs were not changed
+* Tests run and exact pass/fail results
+* Build commands run and exact results
+* iOS application version and build number
+* Exact type and location of the produced iOS artifact
+* Whether Apple signing was completed
+* Whether a TestFlight-ready `.ipa` exists
+* Remaining blockers or manual steps
+* Confirmation that no production data or schema was changed
+* Confirmation that all normal workflows, including the mockup server, were restored
+
+Do not close the iOS task until this report and isolated database validation are complete.

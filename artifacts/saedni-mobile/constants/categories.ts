@@ -1,6 +1,6 @@
 export const CATEGORIES = [
-  { value: "transport",     label: "نقل وتحميل",        icon: "car-outline"            },
-  { value: "delivery",      label: "مشاوير وتوصيل",    icon: "navigate-circle-outline" },
+  { value: "delivery",      label: "مندوب توصيل",      icon: "mci:account-tie-outline" },
+  { value: "transport",     label: "شاحنة للنقل",       icon: "mci:truck-outline"       },
   { value: "government",    label: "معاملات ومراجعات", icon: "document-text-outline"   },
   { value: "shopping",      label: "شراء أغراض",        icon: "bag-outline"             },
   { value: "home_services", label: "خدمات منزلية",      icon: "hammer-outline"          },
@@ -12,8 +12,7 @@ export type CategoryValue = (typeof CATEGORIES)[number]["value"];
 export const AREAS = [
   "مسقط", "بوشر", "الخوير", "الغبرة", "الموالح",
   "السيب", "العامرات",
-  "المعبيلة", "الخوض", "الأنصب", "العذيبة", "القرم", "غلا", "روي",
-  "صور", "صحار", "نزوى", "صلالة", "أخرى",
+  "المعبيلة", "الخوض", "الأنصب", "العذيبة", "القرم", "غلا", "روي", "مطرح", "قريات",
 ];
 
 export const STATUS_INFO: Record<string, { label: string; color: string; bg: string }> = {

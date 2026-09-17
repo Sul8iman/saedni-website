@@ -1,0 +1,116 @@
+Fix the contacted-helpers flow in the Saedni iPhone app.
+
+Current production defects:
+
+1. When helpers contact a customer using Call or WhatsApp, they do not appear in the customer’s request details under contacted helpers.
+2. When the customer completes the request, the helper selection list displays only the helper’s name without their phone number.
+
+Required behavior:
+
+A. Recording helper contact
+
+- In the helper’s available-request screen, both buttons:
+  - اتصال
+  - واتساب
+  must first call:
+  POST /api/requests/:requestId/contact
+- Send the correct contact method: phone or whatsapp.
+- Record the contact successfully before opening the Phone or WhatsApp app.
+- Derive helper_id from the authenticated user, not from a client-provided helper ID.
+- Derive customer_id and contact_phone from the request/database.
+- Do not trust client-provided phone numbers.
+- Make repeated contact idempotent: the same helper must appear only once per request.
+- Update last_contacted_at and the latest contact method on repeated contact.
+- If contact recording fails, show a clear error and do not silently pretend the contact was recorded.
+
+B. Customer request details
+
+In the customer’s request details/history screen, add or fix the section:
+
+المساعدون المتواصلون
+
+For every helper who contacted regarding that request, display:
+
+- Helper name
+- Helper phone number
+- Contact method: اتصال or واتساب
+- Average star rating and rating count
+- “جديد” when the helper has no ratings
+- A direct call button
+- A WhatsApp button
+
+Load this list from:
+
+GET /api/requests/:requestId/contacted-helpers
+
+Only the request owner and authorized admin may access this information.
+
+C. Request completion
+
+When the customer marks a request as completed:
+
+- Load only helpers recorded in request_contacts for that request.
+- Display each option as:
+
+  [Helper name]
+  [Phone number]
+  [Average rating · rating count]
+
+- Do not show the name alone.
+- The customer selects the helper who completed the work and submits a 1–5 star rating.
+- Allow only one rating per completed request.
+- If nobody contacted the customer, allow:
+  لم أتلقَ مساعدة
+  without selecting or rating a helper.
+
+D. Backend verification
+
+Inspect and verify:
+
+- POST /api/requests/:id/contact
+- GET /api/requests/:id/contacted-helpers
+- PATCH /api/requests/:id/complete
+- request_contacts table and its production migration
+- Phone number authorization/redaction rules
+
+Security rules:
+
+- A helper cannot record contact on behalf of another helper.
+- A helper cannot record contact for a request outside their authorized service areas.
+- A customer cannot view contacted helpers for another customer’s request.
+- Only helpers who actually recorded contact may appear in completion selection.
+- Prevent duplicate contact rows.
+- Do not expose phone numbers through general public user endpoints.
+
+E. Historical limitation
+
+Do not fabricate contacted-helper records for old requests. Contacts made before contact tracking was deployed cannot be reconstructed reliably. Show the contacted-helper list only from verified request_contacts records.
+
+F. Required testing
+
+Test the complete flow using the actual iPhone app:
+
+1. Create a test request.
+2. Sign in as a helper authorized for its area.
+3. Press Call.
+4. Confirm one request_contacts row is recorded.
+5. Press WhatsApp for the same request.
+6. Confirm the helper still has one contact summary row.
+7. Sign in as the request owner.
+8. Open the request details.
+9. Confirm the helper’s name, phone number, method, and rating appear.
+10. Complete the request.
+11. Confirm the selection list displays both name and phone number.
+12. Select and rate the helper.
+13. Confirm duplicate rating is rejected.
+
+Run API tests and mobile typecheck. Verify the actual authenticated iPhone screen, not a mockup.
+
+Do not modify unrelated functionality or historical data.
+
+Release:
+
+- Deploy backend changes to Render if required.
+- Increment to the next unused iOS build number. If build 39 is already uploaded, use build 40.
+- Keep version 1.0.9 and bundle ID com.saedni.app.
+- Upload the corrected build to the existing Saedni TestFlight app.

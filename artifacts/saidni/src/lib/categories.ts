@@ -1,8 +1,8 @@
 // Category definitions for ساعدني
 
 export const CATEGORIES = [
-  { value: "transport", label: "نقل وتحميل", icon: "Truck" },
-  { value: "delivery", label: "مشاوير وتوصيل", icon: "Car" },
+  { value: "delivery", label: "مندوب توصيل", icon: "Bike" },
+  { value: "transport", label: "شاحنة للنقل", icon: "Truck" },
   { value: "government", label: "معاملات ومراجعات", icon: "FileText" },
   { value: "shopping", label: "شراء أغراض", icon: "ShoppingBag" },
   { value: "home_services", label: "خدمات منزلية", icon: "Wrench" },
@@ -30,11 +30,8 @@ export const AREAS = [
   "القرم",
   "غلا",
   "روي",
-  "صور",
-  "صحار",
-  "نزوى",
-  "صلالة",
-  "أخرى",
+  "مطرح",
+  "قريات",
 ];
 
 export const STATUS_MAP: Record<string, { label: string; color: string }> = {

@@ -1,0 +1,159 @@
+Continue in the isolated branch, but revise the migration and API contract before building additional route handlers. Do not execute any database migration yet.
+
+The plan is approved in principle, subject to these corrections:
+
+## 1. Correct and Verify the Area Catalog
+
+* `صور` belongs to `جنوب الشرقية`, not `ظفار`.
+* Do not invent, remove, or rename Muscat areas based only on assumptions.
+* Compare the proposed catalog with the exact location list currently used by the application.
+* Preserve the same level of geographic detail. Do not mix wilayats and neighborhoods accidentally.
+* Keep existing Muscat options and deactivate only:
+
+  * صور
+  * صحار
+  * نزوى
+  * صلالة
+  * The location-only option أخرى
+* Show me the final active Muscat area list found in the existing code before finalizing the seed data.
+
+## 2. Add Foreign Keys
+
+The proposed tables currently have integer IDs without referential constraints.
+
+After confirming that the existing primary-key types are compatible, add appropriate foreign keys for:
+
+* `request_contacts.request_id → requests.id`
+* `request_contacts.helper_id → users.id`
+* `request_contacts.customer_id → users.id`
+* `helper_ratings.request_id → requests.id`
+* `helper_ratings.helper_id → users.id`
+* `helper_ratings.customer_id → users.id`
+* `requests.completed_helper_id → users.id`
+
+Choose and document intentional `ON DELETE` behavior. Do not allow orphan contact or rating records.
+
+Do not assume the IDs are integers until their actual database types have been verified.
+
+## 3. Show Each Contacted Helper Only Once
+
+The current unique constraint:
+
+`UNIQUE (request_id, helper_id, contact_method)`
+
+allows the same helper to appear twice when they use both phone and WhatsApp.
+
+The customer’s contacted-helper list must contain one row per helper per request.
+
+Use one of these approaches:
+
+* Prefer one `request_contacts` summary row with `UNIQUE (request_id, helper_id)`, storing the first/latest contact method and the relevant contact number; or
+* Keep a separate contact-event history table and generate a distinct contacted-helper summary.
+
+Whichever approach fits the existing project best, ensure:
+
+* Each helper appears only once.
+* The displayed contact method and number are correct.
+* Repeated button presses are idempotent.
+* Phone and WhatsApp activity can still be handled correctly.
+
+Update the OpenAPI contract to match the selected model.
+
+## 4. Rating Average and Count
+
+Adding only `users.rating_count` is incomplete unless an existing average-rating field has been confirmed.
+
+Use one consistent approach:
+
+* Calculate `AVG(stars)` and `COUNT(*)` from `helper_ratings` in backend queries; or
+* Store both `rating_average` and `rating_count` and update them transactionally.
+
+Do not increment cached counters from the client. Do not allow the average and count to become inconsistent with `helper_ratings`.
+
+Document whether the project already has an average-rating field before adding another one.
+
+## 5. Atomic Completion
+
+The following must occur in one backend database transaction:
+
+* Verify the authenticated user owns the request.
+* Verify the request is eligible for completion.
+* Verify the selected helper contacted the customer for that request.
+* Insert the rating, if applicable.
+* Set `completed_helper_id`.
+* Set whether help was received.
+* Update the request’s completion status and timestamp.
+* Update any cached rating aggregate, if caching is used.
+
+If any step fails, roll back the entire operation.
+
+Repeated completion requests must be handled safely and must not create a second rating or conflicting helper selection.
+
+## 6. Database Constraints
+
+Add database constraints wherever practical, including:
+
+* One rating per request.
+* Stars between 1 and 5.
+* One contacted-helper summary per request/helper.
+* Valid contact methods.
+* Foreign-key integrity.
+
+If the data model allows it cleanly, use a composite relationship or transactional validation to ensure a rated helper exists in the contacted-helper records for that request.
+
+API validation alone is not sufficient for basic relational integrity.
+
+## 7. Phone Number Security
+
+Because `contact_phone` contains personal information:
+
+* Confirm whether the mobile app can access Supabase tables directly or only through the backend API.
+* If Supabase tables are directly exposed, add and test suitable RLS policies.
+* If access is server-only, revoke or prevent unauthorized direct table access and keep authorization in the API.
+* Only the request owner and authorized administrators may retrieve contacted-helper numbers.
+* Never return contact numbers in public helper-profile or general user-list responses.
+* Normalize numbers for actions while preserving a suitable display format.
+
+Include the chosen RLS/access-control approach in the completion report.
+
+## 8. Existing Completion Fields
+
+You found that `requests` already stores helper selection or feedback information.
+
+Before adding `completed_helper_id`:
+
+* Identify and document the existing completion-related columns.
+* Reuse compatible fields where safe.
+* Avoid creating two conflicting sources of truth.
+* Preserve historical values.
+* Explain how old completed requests will be read after the update.
+* Do not automatically create ratings from old free-text feedback.
+
+## 9. Admin Area Filtering
+
+Because `preferred_areas` is JSON stored as text:
+
+* Safely handle malformed JSON without causing the admin query to fail.
+* Ensure helpers matching multiple selected areas appear only once.
+* Define multiple-area filtering as OR matching: a helper appears if they serve at least one selected area.
+* Keep filtering compatible with search, status, category, and pagination.
+* Add tests for `NULL`, `[]`, malformed JSON, inactive areas, and multiple matching areas.
+
+## 10. Rollback Safety
+
+Do not describe dropping populated rating/contact tables as the normal rollback after release because that would destroy newly collected feature data.
+
+Provide:
+
+* A pre-release technical rollback for an unshipped migration; and
+* A post-release forward rollback that disables the feature while preserving collected contact and rating data.
+
+After applying these corrections:
+
+1. Update the migration SQL.
+2. Update the Drizzle schema.
+3. Update the OpenAPI contract.
+4. Run schema and contract validation.
+5. Continue implementation in the isolated branch.
+6. Do not run migrations or writes against production.
+7. Provide the corrected schema summary and exact migration diff in the next checkpoint.

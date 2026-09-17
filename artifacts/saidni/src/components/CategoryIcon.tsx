@@ -1,8 +1,8 @@
-import { Truck, Car, FileText, ShoppingBag, Wrench, HardHat, MapPin, HelpCircle } from "lucide-react";
+import { Bike, Truck, FileText, ShoppingBag, Wrench, HardHat, MapPin, HelpCircle } from "lucide-react";
 
 const iconMap: Record<string, React.ElementType> = {
   Truck,
-  Car,
+  Bike,
   FileText,
   ShoppingBag,
   Wrench,

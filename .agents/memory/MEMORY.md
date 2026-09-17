@@ -3,4 +3,10 @@
 - [EAS build domain fix](eas-domain-fix.md) — EXPO_PUBLIC_DOMAIN must be in eas.json production env block; missing it causes native fetch to use relative URLs which fail on device.
 - [Expo SecureStore+AsyncStorage dual-write](expo-securestore-dual-write.md) — three bugs that together caused persistent logout on every launch; secureGet/secureSet must dual-write and dual-check both stores.
 - [Admin push notification architecture](admin-push-arch.md) — unified push module in api-server/src/lib/push.ts; admin registers via useAdminPushRegistration; OTP tap routes to /(admin)/user-detail.
+- [Helper welcome delivery](helper-welcome-delivery.md) — welcome-template delivery is claimed with a database lease, not an in-process lock, before the timestamp is set.
 - [Expo prebuild package.json pollution](prebuild-pollution.md) — prebuild injects expo/react/react-native into dependencies every run; always `git checkout -- package.json` after prebuild, never commit those mutations.
+- [EAS Android build workflow](eas-android-build-workflow.md) — invoke the project-local EAS CLI from the mobile package; build history accepts at most 50 rows and auto-increment selects the next code.
+- [Artifact production builds](artifact-build-environment.md) — standalone Vite builds require explicit PORT and BASE_PATH; mobile export uses Metro port 8081 and can conflict with mockup preview.
+- [GitHub connector release flow](github-connector-release-flow.md) — use Git Data API blobs/trees/commits plus a normal PR merge when the connected GitHub integration cannot perform a raw git push.
+- [Query boolean normalization](query-boolean-normalization.md) — normalize explicit "true"/"false" query strings before Zod boolean coercion; Boolean("false") is true.
+- [Legacy JSON aggregation](legacy-json-aggregation.md) — this PostgreSQL lacks pg_input_is_valid; safely parse legacy JSON text in application code after minimal-column queries.

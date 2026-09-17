@@ -5,9 +5,11 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
+import { useFocusEffect } from "expo-router";
 import { useColors } from "@/hooks/useColors";
-import { useAuth } from "@/contexts/AuthContext";
+import { getAuthHeaders, useAuth } from "@/contexts/AuthContext";
 import { CATEGORIES, STATUS_INFO } from "@/constants/categories";
+import { requestQueryKeys } from "@/lib/request-query-keys";
 
 const BASE = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
 
@@ -20,17 +22,28 @@ interface HelpRequest {
 export default function HelperMyRequestsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
+  const roleKey = activeRole ?? user?.userType ?? "helper";
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["helper-my-requests", user?.id],
+    queryKey: requestQueryKeys.helperAssigned(user?.id ?? 0, roleKey),
     queryFn: async () => {
       if (!user) return [];
-      const r = await fetch(`${BASE}/api/requests?helperId=${user.id}`, { credentials: "include" });
+      const r = await fetch(`${BASE}/api/requests?helperId=${user.id}`, {
+        credentials: "include",
+        headers: await getAuthHeaders(),
+      });
+      if (!r.ok) throw new Error("تعذر تحميل الطلبات");
       return r.json() as Promise<HelpRequest[]>;
     },
-    enabled: !!user,
+    enabled: !!user && roleKey === "helper",
   });
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user) void refetch();
+    }, [refetch, user]),
+  );
 
   const catLabel = (v: string) => CATEGORIES.find(c => c.value === v)?.label ?? v;
   const s = makeStyles(colors, insets.bottom);
