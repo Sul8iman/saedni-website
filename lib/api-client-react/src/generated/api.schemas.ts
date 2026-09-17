@@ -31,20 +31,30 @@ export interface User {
   area?: string | null;
   /** @nullable */
   rating?: number | null;
+  /**
+     * Count calculated from helper_ratings; not a client-maintained counter.
+     * @minimum 0
+     */
+  ratingCount?: number;
   isActive: boolean;
   isVerified?: boolean;
   isBlocked?: boolean;
+  /** @nullable */
+  deletedAt?: string | null;
   /** @nullable */
   lastLogin?: string | null;
   /** @nullable */
   otpCode?: string | null;
   /** @nullable */
   otpCreatedAt?: string | null;
+  /** @nullable */
+  helperWelcomeMessageSentAt?: string | null;
   createdAt: string;
   /** @nullable */
   helperInterests?: string | null;
   /** @nullable */
   preferredAreas?: string | null;
+  serviceAreas?: string[];
 }
 
 export type RegisterInputUserType = typeof RegisterInputUserType[keyof typeof RegisterInputUserType];
@@ -59,10 +69,22 @@ export interface RegisterInput {
   name: string;
   phone: string;
   userType: RegisterInputUserType;
+  /** @nullable */
+  area?: string | null;
+  preferredAreas?: string[];
 }
+
+export type LoginInputUserType = typeof LoginInputUserType[keyof typeof LoginInputUserType];
+
+
+export const LoginInputUserType = {
+  customer: 'customer',
+  helper: 'helper',
+} as const;
 
 export interface LoginInput {
   phone: string;
+  userType: LoginInputUserType;
 }
 
 export interface VerifyOtpInput {
@@ -75,11 +97,19 @@ export interface AdminLoginInput {
   pin: string;
 }
 
+export type OtpRequestResponseOtpDelivery = typeof OtpRequestResponseOtpDelivery[keyof typeof OtpRequestResponseOtpDelivery];
+
+
+export const OtpRequestResponseOtpDelivery = {
+  whatsapp: 'whatsapp',
+} as const;
+
 export interface OtpRequestResponse {
   message: string;
   otp?: string;
   isVerified?: boolean;
   isAdmin?: boolean;
+  otpDelivery?: OtpRequestResponseOtpDelivery;
 }
 
 export interface AuthResponse {
@@ -94,6 +124,7 @@ export interface UserUpdate {
   helperInterests?: string | null;
   /** @nullable */
   preferredAreas?: string | null;
+  serviceAreas?: string[];
 }
 
 export type HelpRequestCategory = typeof HelpRequestCategory[keyof typeof HelpRequestCategory];
@@ -140,6 +171,18 @@ export interface HelpRequest {
   scheduledDateTime?: string | null;
   offeredAmount: number;
   status: HelpRequestStatus;
+  /** @nullable */
+  helpCompleted?: boolean | null;
+  /** @nullable */
+  completedHelperId?: number | null;
+  /** @nullable */
+  completedAt?: string | null;
+  /** @nullable */
+  deletedAt?: string | null;
+  /** @nullable */
+  deletedByUserId?: number | null;
+  /** @nullable */
+  deletedReason?: string | null;
   createdAt: string;
   /** @nullable */
   customerName?: string | null;
@@ -208,6 +251,139 @@ export interface UpdateRequestStatusInput {
   status: UpdateRequestStatusInputStatus;
 }
 
+/**
+ * Completion is one transaction. When helpCompleted is true, completedHelperId must identify a helper in the request's contacted-helper summary and ratingStars may be supplied once. When helpCompleted is false, no helper or rating is recorded.
+
+ */
+export interface RequestCompletionInput {
+  helpCompleted?: boolean;
+  /** @nullable */
+  completedHelperId?: number | null;
+  /**
+     * @minimum 1
+     * @maximum 5
+     * @nullable
+     */
+  ratingStars?: number | null;
+}
+
+export interface ServiceArea {
+  name: string;
+  governorate: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface UserAreaCount {
+  area: string;
+  /** @minimum 0 */
+  helperCount: number;
+  /** @minimum 0 */
+  customerCount: number;
+}
+
+export interface UserAreaCounts {
+  areas: UserAreaCount[];
+  /** @minimum 0 */
+  totalHelperCount: number;
+  /** @minimum 0 */
+  totalCustomerCount: number;
+  /** @minimum 0 */
+  noAreaHelperCount: number;
+  /** @minimum 0 */
+  noAreaCustomerCount: number;
+}
+
+export type RequestContactInputContactMethod = typeof RequestContactInputContactMethod[keyof typeof RequestContactInputContactMethod];
+
+
+export const RequestContactInputContactMethod = {
+  phone: 'phone',
+  whatsapp: 'whatsapp',
+} as const;
+
+export interface RequestContactInput {
+  contactMethod: RequestContactInputContactMethod;
+}
+
+export type RequestContactContactMethod = typeof RequestContactContactMethod[keyof typeof RequestContactContactMethod];
+
+
+export const RequestContactContactMethod = {
+  phone: 'phone',
+  whatsapp: 'whatsapp',
+} as const;
+
+export interface RequestContact {
+  id: number;
+  requestId: number;
+  helperId: number;
+  customerId: number;
+  contactMethod: RequestContactContactMethod;
+  contactPhone: string;
+  firstContactedAt: string;
+  lastContactedAt: string;
+}
+
+export type ContactedHelperContactMethod = typeof ContactedHelperContactMethod[keyof typeof ContactedHelperContactMethod];
+
+
+export const ContactedHelperContactMethod = {
+  phone: 'phone',
+  whatsapp: 'whatsapp',
+} as const;
+
+export interface ContactedHelper {
+  helperId: number;
+  /** @nullable */
+  helperName: string | null;
+  /** @nullable */
+  profileImageUrl?: string | null;
+  /** @nullable */
+  rating: number | null;
+  ratingCount: number;
+  contactMethod: ContactedHelperContactMethod;
+  /** Returned only to the request owner or an authorized administrator. */
+  contactPhone: string;
+  firstContactedAt: string;
+  lastContactedAt: string;
+}
+
+export type RequestLifecycleEventAction = typeof RequestLifecycleEventAction[keyof typeof RequestLifecycleEventAction];
+
+
+export const RequestLifecycleEventAction = {
+  created: 'created',
+  updated: 'updated',
+  accepted: 'accepted',
+  status_changed: 'status_changed',
+  completed: 'completed',
+  help_result_changed: 'help_result_changed',
+  cancelled: 'cancelled',
+  soft_deleted: 'soft_deleted',
+  restored: 'restored',
+} as const;
+
+/**
+ * @nullable
+ */
+export type RequestLifecycleEventMetadata = {[key: string]: string | number | boolean | null} | null;
+
+export interface RequestLifecycleEvent {
+  id: number;
+  requestId: number;
+  action: RequestLifecycleEventAction;
+  /** @nullable */
+  actorUserId?: number | null;
+  /** @nullable */
+  actorRole?: string | null;
+  /** @nullable */
+  reason?: string | null;
+  /** @nullable */
+  metadata?: RequestLifecycleEventMetadata;
+  createdAt: string;
+}
+
 export interface AdminStats {
   totalUsers: number;
   totalHelpers: number;
@@ -216,6 +392,29 @@ export interface AdminStats {
   activeRequests: number;
   completedRequests: number;
   cancelledRequests: number;
+}
+
+/**
+ * Zero-safe aggregate metrics; no personal data is included.
+ */
+export interface AdminStatistics { [key: string]: unknown }
+
+export interface AdminActiveRequestsResponse {
+  items: HelpRequest[];
+  total: number;
+  page: number;
+  pageSize: number;
+  activeCount: number;
+}
+
+export interface AdminArchiveRequestsResponse {
+  items: HelpRequest[];
+  total: number;
+  helpedCount: number;
+  notHelpedCount: number;
+  archiveCount: number;
+  page: number;
+  pageSize: number;
 }
 
 export type VerifyHelperInputAction = typeof VerifyHelperInputAction[keyof typeof VerifyHelperInputAction];
@@ -245,6 +444,19 @@ export interface AdminNotification {
   createdAt: string;
 }
 
+export type ListUserAreaCountsParams = {
+status?: ListUserAreaCountsStatus;
+};
+
+export type ListUserAreaCountsStatus = typeof ListUserAreaCountsStatus[keyof typeof ListUserAreaCountsStatus];
+
+
+export const ListUserAreaCountsStatus = {
+  all: 'all',
+  active: 'active',
+  blocked: 'blocked',
+} as const;
+
 export type ListRequestsParams = {
 category?: string;
 area?: string;
@@ -255,5 +467,103 @@ helperId?: number;
 
 export type ListUsersParams = {
 userType?: string;
+area?: string[];
+includeNoArea?: boolean;
+search?: string;
+isActive?: boolean;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetAdminStatisticsParams = {
+period?: GetAdminStatisticsPeriod;
+from?: string;
+to?: string;
+area?: string[];
+category?: string;
+};
+
+export type GetAdminStatisticsPeriod = typeof GetAdminStatisticsPeriod[keyof typeof GetAdminStatisticsPeriod];
+
+
+export const GetAdminStatisticsPeriod = {
+  '7d': '7d',
+  '30d': '30d',
+  month: 'month',
+  all: 'all',
+} as const;
+
+export type ListAdminActiveRequestsParams = {
+area?: string[];
+category?: string;
+search?: string;
+from?: string;
+to?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type ListAdminArchiveRequestsParams = {
+area?: string[];
+result?: ListAdminArchiveRequestsResult;
+category?: string;
+search?: string;
+from?: string;
+to?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type ListAdminArchiveRequestsResult = typeof ListAdminArchiveRequestsResult[keyof typeof ListAdminArchiveRequestsResult];
+
+
+export const ListAdminArchiveRequestsResult = {
+  helped: 'helped',
+  not_helped: 'not_helped',
+  all: 'all',
+} as const;
+
+export type DeleteUserBodyConfirmation = typeof DeleteUserBodyConfirmation[keyof typeof DeleteUserBodyConfirmation];
+
+
+export const DeleteUserBodyConfirmation = {
+  حذف: 'حذف',
+} as const;
+
+export type DeleteUserBody = {
+  confirmation: DeleteUserBodyConfirmation;
+};
+
+export type DeleteUser200DeletionMode = typeof DeleteUser200DeletionMode[keyof typeof DeleteUser200DeletionMode];
+
+
+export const DeleteUser200DeletionMode = {
+  permanent: 'permanent',
+  anonymized: 'anonymized',
+} as const;
+
+export type DeleteUser200 = {
+  deletionMode: DeleteUser200DeletionMode;
 };
 

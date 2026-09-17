@@ -5,9 +5,8 @@
  * ساعدني - API specification for the Oman help marketplace
  * OpenAPI spec version: 0.1.0
  */
-import type { LoginInputUserType } from './loginInputUserType';
+import type { DeleteUserBodyConfirmation } from './deleteUserBodyConfirmation';
 
-export interface LoginInput {
-  phone: string;
-  userType: LoginInputUserType;
-}
+export type DeleteUserBody = {
+  confirmation: DeleteUserBodyConfirmation;
+};

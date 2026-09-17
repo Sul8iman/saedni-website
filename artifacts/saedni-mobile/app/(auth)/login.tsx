@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, Linking,
+  ActivityIndicator, Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -13,6 +13,7 @@ import { useAuth, type AuthUser } from "@/contexts/AuthContext";
 import ArabicText from "@/components/ArabicText";
 
 type Step = "phone" | "otp" | "pin";
+type AccountType = "customer" | "helper";
 
 // Production backend — EXPO_PUBLIC_DOMAIN is baked in at EAS build time;
 // fall back to Render so dev/web builds also work.
@@ -24,6 +25,15 @@ const FETCH_TIMEOUT_MS = 15_000;
 type ApiResult =
   | { ok: true; data: Record<string, unknown> }
   | { ok: false; kind: "network" | "timeout" | "client" | "server"; status?: number; message: string };
+
+const AUTH_ERROR_BY_STATUS: Record<number, string> = {
+  400: "بيانات غير صحيحة",
+  401: "بيانات الدخول غير صحيحة",
+  403: "الحساب معطل",
+  404: "رقم الهاتف غير مسجل",
+  429: "محاولات كثيرة، حاول لاحقًا",
+  500: "خطأ داخلي في الخادم",
+};
 
 async function safeApiFetch(url: string, init: RequestInit): Promise<ApiResult> {
   const controller = new AbortController();
@@ -37,10 +47,11 @@ async function safeApiFetch(url: string, init: RequestInit): Promise<ApiResult> 
     if (res.ok) return { ok: true, data };
 
     const msg = typeof data.error === "string" ? data.error : "";
+    const fallback = AUTH_ERROR_BY_STATUS[res.status] ?? "حدث خطأ، يرجى المحاولة مجدداً";
     if (res.status >= 500) {
-      return { ok: false, kind: "server", status: res.status, message: msg || "خطأ في الخادم، يرجى المحاولة لاحقاً" };
+      return { ok: false, kind: "server", status: res.status, message: msg || fallback };
     }
-    return { ok: false, kind: "client", status: res.status, message: msg || "حدث خطأ، يرجى المحاولة مجدداً" };
+    return { ok: false, kind: "client", status: res.status, message: msg || fallback };
   } catch (err: unknown) {
     clearTimeout(timer);
     if (err instanceof Error && err.name === "AbortError") {
@@ -57,11 +68,10 @@ export default function LoginScreen() {
 
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
+  const [accountType, setAccountType] = useState<AccountType>("customer");
   const [otp, setOtp] = useState("");
   const [pin, setPin] = useState("");
   const [isUnverified, setIsUnverified] = useState(false);
-  // "whatsapp" = customer (OTP sent via WhatsApp), "admin" = helper/manual flow
-  const [otpDelivery, setOtpDelivery] = useState<"whatsapp" | "admin">("admin");
   const [loading, setLoading] = useState(false);
 
   async function handlePhoneSubmit() {
@@ -73,7 +83,7 @@ export default function LoginScreen() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ phone: phone.trim() }),
+      body: JSON.stringify({ phone: phone.trim(), userType: accountType }),
     });
 
     setLoading(false);
@@ -92,8 +102,6 @@ export default function LoginScreen() {
       setStep("pin");
     } else {
       setIsUnverified(data.isVerified === false);
-      // Server sends otpDelivery: "whatsapp" | "admin"; fall back to "admin" for old server
-      setOtpDelivery((data.otpDelivery as "whatsapp" | "admin") ?? "admin");
       setStep("otp");
     }
   }
@@ -168,12 +176,6 @@ export default function LoginScreen() {
     router.replace("/");
   }
 
-  function openWhatsAppAdmin() {
-    Linking.openURL(
-      `https://wa.me/96892771450?text=${encodeURIComponent("مرحباً، أحتاج رمز التحقق للدخول إلى تطبيق ساعدني")}`
-    );
-  }
-
   const s = makeStyles(colors);
 
   return (
@@ -201,6 +203,25 @@ export default function LoginScreen() {
           {step === "phone" && (
             <>
               <ArabicText style={s.cardTitle}>تسجيل الدخول</ArabicText>
+              <ArabicText style={s.subLabel}>سنرسل رمز التحقق عبر واتساب بعد إدخال رقمك</ArabicText>
+              <ArabicText style={s.fieldLabel}>نوع الحساب</ArabicText>
+              <View style={s.accountTypeRow}>
+                {([
+                  { value: "customer" as const, label: "عميل" },
+                  { value: "helper" as const, label: "مساعد" },
+                ]).map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[s.accountTypeBtn, accountType === option.value && s.accountTypeBtnActive]}
+                    onPress={() => setAccountType(option.value)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[s.accountTypeTxt, accountType === option.value && s.accountTypeTxtActive]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
               <ArabicText style={s.fieldLabel}>رقم الهاتف</ArabicText>
               <TextInput
                 style={s.input}
@@ -249,22 +270,10 @@ export default function LoginScreen() {
                 الرقم: <Text style={s.subLabelBold}>{phone}</Text>
               </ArabicText>
 
-              {otpDelivery === "whatsapp" ? (
-                // Customer: OTP sent via WhatsApp automatically
-                <View style={s.waInfoBox}>
-                  <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
-                  <ArabicText style={s.waInfoTxt}>أدخل رمز التحقق المرسل إلى رقم واتساب المسجل.</ArabicText>
-                </View>
-              ) : (
-                // Helper / manual flow: contact admin
-                <>
-                  <Text style={s.adminHint}>يرجى التواصل مع الإدارة للحصول على رمز التفعيل.</Text>
-                  <TouchableOpacity style={s.waBtn} onPress={openWhatsAppAdmin} activeOpacity={0.85}>
-                    <Ionicons name="logo-whatsapp" size={20} color="#fff" />
-                    <Text style={s.waBtnTxt}>تواصل مع الإدارة</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+              <View style={s.waInfoBox}>
+                <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                <ArabicText style={s.waInfoTxt}>أدخل رمز التحقق المرسل إلى رقم واتساب المسجل.</ArabicText>
+              </View>
 
               <TextInput
                 style={[s.input, s.otpInput]}
@@ -330,17 +339,6 @@ export default function LoginScreen() {
           )}
         </View>
 
-        {/* ── DIAGNOSTIC: RTL test navigation — remove before production ── */}
-        <TouchableOpacity
-          onPress={() => router.push("/rtl-test" as never)}
-          style={{ alignItems: "center", paddingVertical: 16, marginTop: 8 }}
-        >
-          <Text style={{ fontSize: 11, color: "#9CA3AF" }}>
-            [RTL Test Screen]
-          </Text>
-        </TouchableOpacity>
-        {/* ──────────────────────────────────────────────────────────────── */}
-
       </KeyboardAwareScrollViewCompat>
     </SafeAreaView>
   );
@@ -377,6 +375,18 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
     },
     subLabel: { fontSize: 13, color: c.mutedForeground, textAlign: "right", marginBottom: 12 },
     subLabelBold: { fontWeight: "700", color: c.foreground },
+    accountTypeRow: {
+      flexDirection: "row-reverse", gap: 10, marginBottom: 16,
+    },
+    accountTypeBtn: {
+      flex: 1, borderWidth: 1.5, borderColor: c.border, borderRadius: 12,
+      paddingVertical: 12, alignItems: "center", backgroundColor: c.background,
+    },
+    accountTypeBtnActive: {
+      borderColor: c.primary, backgroundColor: c.secondary,
+    },
+    accountTypeTxt: { fontSize: 15, fontWeight: "600", color: c.mutedForeground },
+    accountTypeTxtActive: { color: c.primary, fontWeight: "700" },
     input: {
       borderWidth: 1.5, borderColor: c.border, borderRadius: 12,
       paddingHorizontal: 16, paddingVertical: 14,
@@ -396,16 +406,6 @@ const makeStyles = (c: ReturnType<typeof useColors>) =>
     ghostBtn: { alignItems: "center", paddingVertical: 10 },
     ghostTxt: { fontSize: 14, color: c.mutedForeground, textAlign: "center" },
     ghostLink: { color: c.primary, fontWeight: "700" },
-    adminHint: {
-      fontSize: 13, color: c.mutedForeground, textAlign: "center",
-      marginBottom: 12, lineHeight: 20,
-    },
-    waBtn: {
-      backgroundColor: "#25D366", borderRadius: 12, paddingVertical: 13,
-      flexDirection: "row-reverse", alignItems: "center", justifyContent: "center",
-      gap: 10, marginBottom: 16,
-    },
-    waBtnTxt: { color: "#fff", fontSize: 14, fontWeight: "700" },
     waInfoBox: {
       flexDirection: "row-reverse", alignItems: "center", gap: 8,
       backgroundColor: "#F0FDF4", borderRadius: 10, padding: 12,

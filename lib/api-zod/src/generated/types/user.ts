@@ -16,18 +16,28 @@ export interface User {
   area?: string | null;
   /** @nullable */
   rating?: number | null;
+  /**
+     * Count calculated from helper_ratings; not a client-maintained counter.
+     * @minimum 0
+     */
+  ratingCount?: number;
   isActive: boolean;
   isVerified?: boolean;
   isBlocked?: boolean;
+  /** @nullable */
+  deletedAt?: Date | null;
   /** @nullable */
   lastLogin?: string | null;
   /** @nullable */
   otpCode?: string | null;
   /** @nullable */
   otpCreatedAt?: string | null;
+  /** @nullable */
+  helperWelcomeMessageSentAt?: string | null;
   createdAt: string;
   /** @nullable */
   helperInterests?: string | null;
   /** @nullable */
   preferredAreas?: string | null;
+  serviceAreas?: string[];
 }

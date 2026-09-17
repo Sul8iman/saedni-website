@@ -84,7 +84,7 @@ export default function Register() {
   const handleResend = () => {
     setOtp("");
     loginMutation.mutate(
-      { data: { phone } },
+      { data: { phone, userType: form.getValues("userType") } },
       {
         onSuccess: () => {
           toast({ title: "تم إنشاء رمز جديد" });

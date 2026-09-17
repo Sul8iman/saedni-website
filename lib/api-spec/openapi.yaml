@@ -38,7 +38,7 @@ paths:
       tags: [auth]
       summary: Register a new user (returns OTP, does NOT log in)
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
@@ -57,9 +57,9 @@ paths:
     post:
       operationId: login
       tags: [auth]
-      summary: Request OTP login (phone only)
+      summary: Request OTP login for a selected account type
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
@@ -80,7 +80,7 @@ paths:
       tags: [auth]
       summary: Admin login with phone + PIN (no OTP)
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
@@ -148,6 +148,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /service-areas:
+    get:
+      operationId: listServiceAreas
+      tags: [users]
+      summary: List active Muscat service areas
+      responses:
+        "200":
+          description: Active service areas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServiceArea"
+
+  /users/area-counts:
+    get:
+      operationId: listUserAreaCounts
+      tags: [users]
+      summary: List admin user counts by service area
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, active, blocked]
+            default: all
+      responses:
+        "200":
+          description: User counts by active service area
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAreaCounts"
+        "403":
+          description: Admin access required
 
   /requests:
     get:
@@ -252,7 +288,7 @@ paths:
     delete:
       operationId: deleteRequest
       tags: [requests]
-      summary: Delete a help request
+      summary: Archive a help request
       parameters:
         - name: id
           in: path
@@ -261,7 +297,7 @@ paths:
             type: integer
       responses:
         "204":
-          description: Deleted
+          description: Archived
 
   /requests/{id}/status:
     patch:
@@ -321,6 +357,89 @@ paths:
         "404":
           description: Not found
 
+  /requests/{id}/complete:
+    patch:
+      operationId: completeRequest
+      tags: [requests]
+      summary: Atomically complete a request, record help feedback, and optionally rate the contacted helper
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestCompletionInput"
+      responses:
+        "200":
+          description: Completed request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HelpRequest"
+        "400":
+          description: Request cannot be completed
+        "403":
+          description: Not allowed
+        "404":
+          description: Not found
+
+  /requests/{id}/contact:
+    post:
+      operationId: recordRequestContact
+      tags: [requests]
+      summary: Record an authorized helper contact attempt
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestContactInput"
+      responses:
+        "200":
+          description: Contact recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestContact"
+        "403":
+          description: Helper is not authorized to contact this request
+        "404":
+          description: Request or customer not found
+
+  /requests/{id}/contacted-helpers:
+    get:
+      operationId: listContactedHelpers
+      tags: [requests]
+      summary: List helpers who contacted a request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Authorized contacted helpers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContactedHelper"
+        "403":
+          description: Only the request owner or an administrator may view contact numbers
+
   /requests/{id}/cancel:
     patch:
       operationId: cancelRequest
@@ -352,6 +471,37 @@ paths:
           in: query
           schema:
             type: string
+        - name: area
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+        - name: includeNoArea
+          in: query
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
       responses:
         "200":
           description: List of users
@@ -419,6 +569,145 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminStats"
 
+  /admin/statistics:
+    get:
+      operationId: getAdminStatistics
+      tags: [admin]
+      summary: Aggregate administrator dashboard metrics
+      parameters:
+        - {name: period, in: query, schema: {type: string, enum: [7d, 30d, month, all]}}
+        - {name: from, in: query, schema: {type: string, format: date-time}}
+        - {name: to, in: query, schema: {type: string, format: date-time}}
+        - name: area
+          in: query
+          style: form
+          explode: true
+          schema: {type: array, items: {type: string}}
+        - {name: category, in: query, schema: {type: string}}
+      responses:
+        "200":
+          description: Aggregate statistics
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AdminStatistics"}
+        "400": {description: Invalid filters}
+        "401": {description: Authentication required}
+        "403": {description: Admin required}
+
+  /admin/requests/active:
+    get:
+      operationId: listAdminActiveRequests
+      tags: [admin]
+      summary: List active requests for administrators
+      parameters:
+        - {name: area, in: query, style: form, explode: true, schema: {type: array, items: {type: string}}}
+        - {name: category, in: query, schema: {type: string}}
+        - {name: search, in: query, schema: {type: string}}
+        - {name: from, in: query, schema: {type: string, format: date-time}}
+        - {name: to, in: query, schema: {type: string, format: date-time}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1}}
+        - {name: pageSize, in: query, schema: {type: integer, minimum: 1, maximum: 100}}
+      responses:
+        "200":
+          description: Active requests page
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AdminActiveRequestsResponse"}
+
+  /admin/requests/archive:
+    get:
+      operationId: listAdminArchiveRequests
+      tags: [admin]
+      summary: List completed requests for administrators
+      parameters:
+        - {name: area, in: query, style: form, explode: true, schema: {type: array, items: {type: string}}}
+        - {name: result, in: query, schema: {type: string, enum: [helped, not_helped, all]}}
+        - {name: category, in: query, schema: {type: string}}
+        - {name: search, in: query, schema: {type: string}}
+        - {name: from, in: query, schema: {type: string, format: date-time}}
+        - {name: to, in: query, schema: {type: string, format: date-time}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1}}
+        - {name: pageSize, in: query, schema: {type: integer, minimum: 1, maximum: 100}}
+      responses:
+        "200":
+          description: Completed requests page
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AdminArchiveRequestsResponse"}
+
+  /admin/requests/deleted:
+    get:
+      operationId: listDeletedRequests
+      tags: [admin]
+      summary: List archived help requests
+      responses:
+        "200":
+          description: Archived requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HelpRequest"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin required
+
+  /admin/requests/{id}/history:
+    get:
+      operationId: listRequestLifecycleEvents
+      tags: [admin]
+      summary: List request lifecycle audit history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Request lifecycle history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequestLifecycleEvent"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin required
+        "404":
+          description: Not found
+
+  /admin/requests/{id}/restore:
+    post:
+      operationId: restoreRequest
+      tags: [admin]
+      summary: Restore an archived help request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Restored request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HelpRequest"
+        "400":
+          description: Request is not archived
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin required
+        "404":
+          description: Not found
+
   /admin/helpers/{id}/verify:
     patch:
       operationId: verifyHelper
@@ -448,16 +737,36 @@ paths:
     delete:
       operationId: deleteUser
       tags: [admin]
-      summary: Delete a user (admin)
+      summary: Delete or anonymize a user without changing historical records
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation]
+              properties:
+                confirmation:
+                  type: string
+                  enum: [حذف]
       responses:
-        "204":
-          description: Deleted
+        "200":
+          description: Deleted or anonymized
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deletionMode]
+                properties:
+                  deletionMode:
+                    type: string
+                    enum: [permanent, anonymized]
 
   /admin/notifications:
     get:
@@ -530,17 +839,26 @@ components:
           type: ["string", "null"]
         rating:
           type: ["number", "null"]
+        ratingCount:
+          type: integer
+          minimum: 0
+          description: Count calculated from helper_ratings; not a client-maintained counter.
         isActive:
           type: boolean
         isVerified:
           type: boolean
         isBlocked:
           type: boolean
+        deletedAt:
+          type: ["string", "null"]
+          format: date-time
         lastLogin:
           type: ["string", "null"]
         otpCode:
           type: ["string", "null"]
         otpCreatedAt:
+          type: ["string", "null"]
+        helperWelcomeMessageSentAt:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -548,6 +866,10 @@ components:
           type: ["string", "null"]
         preferredAreas:
           type: ["string", "null"]
+        serviceAreas:
+          type: array
+          items:
+            type: string
 
     RegisterInput:
       type: object
@@ -560,13 +882,22 @@ components:
         userType:
           type: string
           enum: [customer, helper]
+        area:
+          type: ["string", "null"]
+        preferredAreas:
+          type: array
+          items:
+            type: string
 
     LoginInput:
       type: object
-      required: [phone]
+      required: [phone, userType]
       properties:
         phone:
           type: string
+        userType:
+          type: string
+          enum: [customer, helper]
 
     VerifyOtpInput:
       type: object
@@ -598,6 +929,9 @@ components:
           type: boolean
         isAdmin:
           type: boolean
+        otpDelivery:
+          type: string
+          enum: [whatsapp]
 
     AuthResponse:
       type: object
@@ -619,6 +953,10 @@ components:
           type: ["string", "null"]
         preferredAreas:
           type: ["string", "null"]
+        serviceAreas:
+          type: array
+          items:
+            type: string
 
     HelpRequest:
       type: object
@@ -647,6 +985,18 @@ components:
         status:
           type: string
           enum: [available, accepted, in_progress, completed, cancelled]
+        helpCompleted:
+          type: ["boolean", "null"]
+        completedHelperId:
+          type: ["integer", "null"]
+        completedAt:
+          type: ["string", "null"]
+        deletedAt:
+          type: ["string", "null"]
+        deletedByUserId:
+          type: ["integer", "null"]
+        deletedReason:
+          type: ["string", "null"]
         createdAt:
           type: string
         customerName:
@@ -712,6 +1062,149 @@ components:
           type: string
           enum: [in_progress, completed, cancelled]
 
+    RequestCompletionInput:
+      type: object
+      description: >
+        Completion is one transaction. When helpCompleted is true,
+        completedHelperId must identify a helper in the request's contacted-helper
+        summary and ratingStars may be supplied once. When helpCompleted is false,
+        no helper or rating is recorded.
+      properties:
+        helpCompleted:
+          type: boolean
+        completedHelperId:
+          type: ["integer", "null"]
+        ratingStars:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 5
+
+    ServiceArea:
+      type: object
+      required: [name, governorate, isActive, sortOrder]
+      properties:
+        name:
+          type: string
+        governorate:
+          type: string
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    UserAreaCount:
+      type: object
+      required: [area, helperCount, customerCount]
+      properties:
+        area:
+          type: string
+        helperCount:
+          type: integer
+          minimum: 0
+        customerCount:
+          type: integer
+          minimum: 0
+
+    UserAreaCounts:
+      type: object
+      required: [areas, totalHelperCount, totalCustomerCount, noAreaHelperCount, noAreaCustomerCount]
+      properties:
+        areas:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserAreaCount"
+        totalHelperCount:
+          type: integer
+          minimum: 0
+        totalCustomerCount:
+          type: integer
+          minimum: 0
+        noAreaHelperCount:
+          type: integer
+          minimum: 0
+        noAreaCustomerCount:
+          type: integer
+          minimum: 0
+
+    RequestContactInput:
+      type: object
+      required: [contactMethod]
+      properties:
+        contactMethod:
+          type: string
+          enum: [phone, whatsapp]
+
+    RequestContact:
+      type: object
+      required: [id, requestId, helperId, customerId, contactMethod, contactPhone, firstContactedAt, lastContactedAt]
+      properties:
+        id:
+          type: integer
+        requestId:
+          type: integer
+        helperId:
+          type: integer
+        customerId:
+          type: integer
+        contactMethod:
+          type: string
+          enum: [phone, whatsapp]
+        contactPhone:
+          type: string
+        firstContactedAt:
+          type: string
+        lastContactedAt:
+          type: string
+
+    ContactedHelper:
+      type: object
+      required: [helperId, helperName, rating, ratingCount, contactMethod, contactPhone, firstContactedAt, lastContactedAt]
+      properties:
+        helperId:
+          type: integer
+        helperName:
+          type: ["string", "null"]
+        profileImageUrl:
+          type: ["string", "null"]
+        rating:
+          type: ["number", "null"]
+        ratingCount:
+          type: integer
+        contactMethod:
+          type: string
+          enum: [phone, whatsapp]
+        contactPhone:
+          type: string
+          description: Returned only to the request owner or an authorized administrator.
+        firstContactedAt:
+          type: string
+        lastContactedAt:
+          type: string
+
+    RequestLifecycleEvent:
+      type: object
+      required: [id, requestId, action, createdAt]
+      properties:
+        id:
+          type: integer
+        requestId:
+          type: integer
+        action:
+          type: string
+          enum: [created, updated, accepted, status_changed, completed, help_result_changed, cancelled, soft_deleted, restored]
+        actorUserId:
+          type: ["integer", "null"]
+        actorRole:
+          type: ["string", "null"]
+        reason:
+          type: ["string", "null"]
+        metadata:
+          type: ["object", "null"]
+          additionalProperties:
+            type: [string, number, boolean, "null"]
+        createdAt:
+          type: string
+
     AdminStats:
       type: object
       required: [totalUsers, totalHelpers, totalCustomers, totalRequests, activeRequests, completedRequests, cancelledRequests]
@@ -730,6 +1223,33 @@ components:
           type: integer
         cancelledRequests:
           type: integer
+
+    AdminStatistics:
+      type: object
+      additionalProperties: true
+      description: Zero-safe aggregate metrics; no personal data is included.
+
+    AdminActiveRequestsResponse:
+      type: object
+      required: [items, total, page, pageSize, activeCount]
+      properties:
+        items: {type: array, items: {$ref: "#/components/schemas/HelpRequest"}}
+        total: {type: integer}
+        page: {type: integer}
+        pageSize: {type: integer}
+        activeCount: {type: integer}
+
+    AdminArchiveRequestsResponse:
+      type: object
+      required: [items, total, helpedCount, notHelpedCount, archiveCount, page, pageSize]
+      properties:
+        items: {type: array, items: {$ref: "#/components/schemas/HelpRequest"}}
+        total: {type: integer}
+        helpedCount: {type: integer}
+        notHelpedCount: {type: integer}
+        archiveCount: {type: integer}
+        page: {type: integer}
+        pageSize: {type: integer}
 
     VerifyHelperInput:
       type: object
