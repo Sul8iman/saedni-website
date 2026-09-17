@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type Step = "phone" | "otp" | "admin-pin";
+type AccountType = "customer" | "helper";
 
 export default function Login() {
   const { setUser } = useAuth();
@@ -20,6 +21,7 @@ export default function Login() {
 
   const [step, setStep]             = useState<Step>("phone");
   const [phone, setPhone]           = useState("");
+  const [accountType, setAccountType] = useState<AccountType>("customer");
   const [otp, setOtp]               = useState("");
   const [pin, setPin]               = useState("");
   const [unverified, setUnverified] = useState(false);
@@ -32,7 +34,7 @@ export default function Login() {
       return;
     }
     loginMutation.mutate(
-      { data: { phone: phone.trim() } },
+      { data: { phone: phone.trim(), userType: accountType } },
       {
         onSuccess: (res) => {
           if (res.isAdmin) {
@@ -98,7 +100,7 @@ export default function Login() {
   const handleResend = () => {
     setOtp("");
     loginMutation.mutate(
-      { data: { phone: phone.trim() } },
+      { data: { phone: phone.trim(), userType: accountType } },
       {
         onSuccess: (res) => {
           setUnverified(res.isVerified === false);
@@ -130,6 +132,28 @@ export default function Login() {
             <div className="flex items-center gap-2 mb-2">
               <Phone className="w-5 h-5 text-primary" />
               <p className="font-semibold text-sm">أدخل رقم هاتفك</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">نوع الحساب</p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { value: "customer" as const, label: "طالب مساعدة" },
+                  { value: "helper" as const, label: "مساعد" },
+                ]).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setAccountType(option.value)}
+                    className={`rounded-xl border px-3 py-3 text-sm font-semibold transition-colors ${
+                      accountType === option.value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-background text-muted-foreground"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <Input
               type="tel"

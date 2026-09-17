@@ -22,22 +22,26 @@ export const HealthCheckResponse = zod.object({
 export const RegisterBody = zod.object({
   "name": zod.string(),
   "phone": zod.string(),
-  "userType": zod.enum(['customer', 'helper'])
+  "userType": zod.enum(['customer', 'helper']),
+  "area": zod.string().nullish(),
+  "preferredAreas": zod.array(zod.string()).optional()
 })
 
 
 /**
- * @summary Request OTP login (phone only)
+ * @summary Request OTP login for a selected account type
  */
 export const LoginBody = zod.object({
-  "phone": zod.string()
+  "phone": zod.string(),
+  "userType": zod.enum(['customer', 'helper'])
 })
 
 export const LoginResponse = zod.object({
   "message": zod.string(),
   "otp": zod.string().optional(),
   "isVerified": zod.boolean().optional(),
-  "isAdmin": zod.boolean().optional()
+  "isAdmin": zod.boolean().optional(),
+  "otpDelivery": zod.enum(['whatsapp']).optional()
 })
 
 
@@ -49,6 +53,10 @@ export const AdminLoginBody = zod.object({
   "pin": zod.string()
 })
 
+export const adminLoginResponseUserRatingCountMin = 0;
+
+
+
 export const AdminLoginResponse = zod.object({
   "user": zod.object({
   "id": zod.number(),
@@ -57,15 +65,19 @@ export const AdminLoginResponse = zod.object({
   "userType": zod.enum(['customer', 'helper', 'admin']),
   "area": zod.string().nullish(),
   "rating": zod.number().nullish(),
+  "ratingCount": zod.number().min(adminLoginResponseUserRatingCountMin).optional().describe('Count calculated from helper_ratings; not a client-maintained counter.'),
   "isActive": zod.boolean(),
   "isVerified": zod.boolean().optional(),
   "isBlocked": zod.boolean().optional(),
+  "deletedAt": zod.coerce.date().nullish(),
   "lastLogin": zod.string().nullish(),
   "otpCode": zod.string().nullish(),
   "otpCreatedAt": zod.string().nullish(),
+  "helperWelcomeMessageSentAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "helperInterests": zod.string().nullish(),
-  "preferredAreas": zod.string().nullish()
+  "preferredAreas": zod.string().nullish(),
+  "serviceAreas": zod.array(zod.string()).optional()
 })
 })
 
@@ -78,6 +90,10 @@ export const VerifyOtpBody = zod.object({
   "otp": zod.string()
 })
 
+export const verifyOtpResponseUserRatingCountMin = 0;
+
+
+
 export const VerifyOtpResponse = zod.object({
   "user": zod.object({
   "id": zod.number(),
@@ -86,15 +102,19 @@ export const VerifyOtpResponse = zod.object({
   "userType": zod.enum(['customer', 'helper', 'admin']),
   "area": zod.string().nullish(),
   "rating": zod.number().nullish(),
+  "ratingCount": zod.number().min(verifyOtpResponseUserRatingCountMin).optional().describe('Count calculated from helper_ratings; not a client-maintained counter.'),
   "isActive": zod.boolean(),
   "isVerified": zod.boolean().optional(),
   "isBlocked": zod.boolean().optional(),
+  "deletedAt": zod.coerce.date().nullish(),
   "lastLogin": zod.string().nullish(),
   "otpCode": zod.string().nullish(),
   "otpCreatedAt": zod.string().nullish(),
+  "helperWelcomeMessageSentAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "helperInterests": zod.string().nullish(),
-  "preferredAreas": zod.string().nullish()
+  "preferredAreas": zod.string().nullish(),
+  "serviceAreas": zod.array(zod.string()).optional()
 })
 })
 
@@ -102,6 +122,10 @@ export const VerifyOtpResponse = zod.object({
 /**
  * @summary Get current user
  */
+export const getMeResponseRatingCountMin = 0;
+
+
+
 export const GetMeResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -109,15 +133,19 @@ export const GetMeResponse = zod.object({
   "userType": zod.enum(['customer', 'helper', 'admin']),
   "area": zod.string().nullish(),
   "rating": zod.number().nullish(),
+  "ratingCount": zod.number().min(getMeResponseRatingCountMin).optional().describe('Count calculated from helper_ratings; not a client-maintained counter.'),
   "isActive": zod.boolean(),
   "isVerified": zod.boolean().optional(),
   "isBlocked": zod.boolean().optional(),
+  "deletedAt": zod.coerce.date().nullish(),
   "lastLogin": zod.string().nullish(),
   "otpCode": zod.string().nullish(),
   "otpCreatedAt": zod.string().nullish(),
+  "helperWelcomeMessageSentAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "helperInterests": zod.string().nullish(),
-  "preferredAreas": zod.string().nullish()
+  "preferredAreas": zod.string().nullish(),
+  "serviceAreas": zod.array(zod.string()).optional()
 })
 
 
@@ -126,6 +154,54 @@ export const GetMeResponse = zod.object({
  */
 export const LogoutResponse = zod.object({
   "success": zod.boolean()
+})
+
+
+/**
+ * @summary List active Muscat service areas
+ */
+export const ListServiceAreasResponseItem = zod.object({
+  "name": zod.string(),
+  "governorate": zod.string(),
+  "isActive": zod.boolean(),
+  "sortOrder": zod.number()
+})
+export const ListServiceAreasResponse = zod.array(ListServiceAreasResponseItem)
+
+
+/**
+ * @summary List admin user counts by service area
+ */
+export const listUserAreaCountsQueryStatusDefault = `all`;
+
+export const ListUserAreaCountsQueryParams = zod.object({
+  "status": zod.enum(['all', 'active', 'blocked']).default(listUserAreaCountsQueryStatusDefault)
+})
+
+export const listUserAreaCountsResponseAreasItemHelperCountMin = 0;
+
+export const listUserAreaCountsResponseAreasItemCustomerCountMin = 0;
+
+export const listUserAreaCountsResponseTotalHelperCountMin = 0;
+
+export const listUserAreaCountsResponseTotalCustomerCountMin = 0;
+
+export const listUserAreaCountsResponseNoAreaHelperCountMin = 0;
+
+export const listUserAreaCountsResponseNoAreaCustomerCountMin = 0;
+
+
+
+export const ListUserAreaCountsResponse = zod.object({
+  "areas": zod.array(zod.object({
+  "area": zod.string(),
+  "helperCount": zod.number().min(listUserAreaCountsResponseAreasItemHelperCountMin),
+  "customerCount": zod.number().min(listUserAreaCountsResponseAreasItemCustomerCountMin)
+})),
+  "totalHelperCount": zod.number().min(listUserAreaCountsResponseTotalHelperCountMin),
+  "totalCustomerCount": zod.number().min(listUserAreaCountsResponseTotalCustomerCountMin),
+  "noAreaHelperCount": zod.number().min(listUserAreaCountsResponseNoAreaHelperCountMin),
+  "noAreaCustomerCount": zod.number().min(listUserAreaCountsResponseNoAreaCustomerCountMin)
 })
 
 
@@ -151,6 +227,12 @@ export const ListRequestsResponseItem = zod.object({
   "scheduledDateTime": zod.string().nullish(),
   "offeredAmount": zod.number(),
   "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
   "createdAt": zod.string(),
   "customerName": zod.string().nullish(),
   "customerPhone": zod.string().nullish(),
@@ -192,6 +274,12 @@ export const GetRequestResponse = zod.object({
   "scheduledDateTime": zod.string().nullish(),
   "offeredAmount": zod.number(),
   "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
   "createdAt": zod.string(),
   "customerName": zod.string().nullish(),
   "customerPhone": zod.string().nullish(),
@@ -228,6 +316,12 @@ export const UpdateRequestResponse = zod.object({
   "scheduledDateTime": zod.string().nullish(),
   "offeredAmount": zod.number(),
   "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
   "createdAt": zod.string(),
   "customerName": zod.string().nullish(),
   "customerPhone": zod.string().nullish(),
@@ -237,7 +331,7 @@ export const UpdateRequestResponse = zod.object({
 
 
 /**
- * @summary Delete a help request
+ * @summary Archive a help request
  */
 export const DeleteRequestParams = zod.object({
   "id": zod.coerce.number()
@@ -266,6 +360,12 @@ export const UpdateRequestStatusResponse = zod.object({
   "scheduledDateTime": zod.string().nullish(),
   "offeredAmount": zod.number(),
   "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
   "createdAt": zod.string(),
   "customerName": zod.string().nullish(),
   "customerPhone": zod.string().nullish(),
@@ -296,12 +396,104 @@ export const AcceptRequestResponse = zod.object({
   "scheduledDateTime": zod.string().nullish(),
   "offeredAmount": zod.number(),
   "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
   "createdAt": zod.string(),
   "customerName": zod.string().nullish(),
   "customerPhone": zod.string().nullish(),
   "helperName": zod.string().nullish(),
   "helperPhone": zod.string().nullish()
 })
+
+
+/**
+ * @summary Atomically complete a request, record help feedback, and optionally rate the contacted helper
+ */
+export const CompleteRequestParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const completeRequestBodyRatingStarsMax = 5;
+
+
+
+export const CompleteRequestBody = zod.object({
+  "helpCompleted": zod.boolean().optional(),
+  "completedHelperId": zod.number().nullish(),
+  "ratingStars": zod.number().min(1).max(completeRequestBodyRatingStarsMax).nullish()
+}).describe('Completion is one transaction. When helpCompleted is true, completedHelperId must identify a helper in the request\'s contacted-helper summary and ratingStars may be supplied once. When helpCompleted is false, no helper or rating is recorded.\n')
+
+export const CompleteRequestResponse = zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "helperId": zod.number().nullish(),
+  "category": zod.enum(['transport', 'delivery', 'government', 'shopping', 'home_services', 'labor']),
+  "details": zod.string(),
+  "area": zod.string(),
+  "timeType": zod.enum(['now', 'scheduled']),
+  "scheduledDateTime": zod.string().nullish(),
+  "offeredAmount": zod.number(),
+  "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "customerName": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "helperName": zod.string().nullish(),
+  "helperPhone": zod.string().nullish()
+})
+
+
+/**
+ * @summary Record an authorized helper contact attempt
+ */
+export const RecordRequestContactParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RecordRequestContactBody = zod.object({
+  "contactMethod": zod.enum(['phone', 'whatsapp'])
+})
+
+export const RecordRequestContactResponse = zod.object({
+  "id": zod.number(),
+  "requestId": zod.number(),
+  "helperId": zod.number(),
+  "customerId": zod.number(),
+  "contactMethod": zod.enum(['phone', 'whatsapp']),
+  "contactPhone": zod.string(),
+  "firstContactedAt": zod.string(),
+  "lastContactedAt": zod.string()
+})
+
+
+/**
+ * @summary List helpers who contacted a request
+ */
+export const ListContactedHelpersParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListContactedHelpersResponseItem = zod.object({
+  "helperId": zod.number(),
+  "helperName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullish(),
+  "rating": zod.number().nullable(),
+  "ratingCount": zod.number(),
+  "contactMethod": zod.enum(['phone', 'whatsapp']),
+  "contactPhone": zod.string().describe('Returned only to the request owner or an authorized administrator.'),
+  "firstContactedAt": zod.string(),
+  "lastContactedAt": zod.string()
+})
+export const ListContactedHelpersResponse = zod.array(ListContactedHelpersResponseItem)
 
 
 /**
@@ -322,6 +514,12 @@ export const CancelRequestResponse = zod.object({
   "scheduledDateTime": zod.string().nullish(),
   "offeredAmount": zod.number(),
   "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
   "createdAt": zod.string(),
   "customerName": zod.string().nullish(),
   "customerPhone": zod.string().nullish(),
@@ -333,9 +531,24 @@ export const CancelRequestResponse = zod.object({
 /**
  * @summary List users (admin)
  */
+
+export const listUsersQueryPageSizeMax = 100;
+
+
+
 export const ListUsersQueryParams = zod.object({
-  "userType": zod.coerce.string().optional()
+  "userType": zod.coerce.string().optional(),
+  "area": zod.array(zod.coerce.string()).optional(),
+  "includeNoArea": zod.coerce.boolean().optional(),
+  "search": zod.coerce.string().optional(),
+  "isActive": zod.coerce.boolean().optional(),
+  "page": zod.coerce.number().min(1).optional(),
+  "pageSize": zod.coerce.number().min(1).max(listUsersQueryPageSizeMax).optional()
 })
+
+export const listUsersResponseRatingCountMin = 0;
+
+
 
 export const ListUsersResponseItem = zod.object({
   "id": zod.number(),
@@ -344,15 +557,19 @@ export const ListUsersResponseItem = zod.object({
   "userType": zod.enum(['customer', 'helper', 'admin']),
   "area": zod.string().nullish(),
   "rating": zod.number().nullish(),
+  "ratingCount": zod.number().min(listUsersResponseRatingCountMin).optional().describe('Count calculated from helper_ratings; not a client-maintained counter.'),
   "isActive": zod.boolean(),
   "isVerified": zod.boolean().optional(),
   "isBlocked": zod.boolean().optional(),
+  "deletedAt": zod.coerce.date().nullish(),
   "lastLogin": zod.string().nullish(),
   "otpCode": zod.string().nullish(),
   "otpCreatedAt": zod.string().nullish(),
+  "helperWelcomeMessageSentAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "helperInterests": zod.string().nullish(),
-  "preferredAreas": zod.string().nullish()
+  "preferredAreas": zod.string().nullish(),
+  "serviceAreas": zod.array(zod.string()).optional()
 })
 export const ListUsersResponse = zod.array(ListUsersResponseItem)
 
@@ -364,6 +581,10 @@ export const GetUserParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const getUserResponseRatingCountMin = 0;
+
+
+
 export const GetUserResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -371,15 +592,19 @@ export const GetUserResponse = zod.object({
   "userType": zod.enum(['customer', 'helper', 'admin']),
   "area": zod.string().nullish(),
   "rating": zod.number().nullish(),
+  "ratingCount": zod.number().min(getUserResponseRatingCountMin).optional().describe('Count calculated from helper_ratings; not a client-maintained counter.'),
   "isActive": zod.boolean(),
   "isVerified": zod.boolean().optional(),
   "isBlocked": zod.boolean().optional(),
+  "deletedAt": zod.coerce.date().nullish(),
   "lastLogin": zod.string().nullish(),
   "otpCode": zod.string().nullish(),
   "otpCreatedAt": zod.string().nullish(),
+  "helperWelcomeMessageSentAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "helperInterests": zod.string().nullish(),
-  "preferredAreas": zod.string().nullish()
+  "preferredAreas": zod.string().nullish(),
+  "serviceAreas": zod.array(zod.string()).optional()
 })
 
 
@@ -395,8 +620,13 @@ export const UpdateUserBody = zod.object({
   "area": zod.string().optional(),
   "isActive": zod.boolean().optional(),
   "helperInterests": zod.string().nullish(),
-  "preferredAreas": zod.string().nullish()
+  "preferredAreas": zod.string().nullish(),
+  "serviceAreas": zod.array(zod.string()).optional()
 })
+
+export const updateUserResponseRatingCountMin = 0;
+
+
 
 export const UpdateUserResponse = zod.object({
   "id": zod.number(),
@@ -405,15 +635,19 @@ export const UpdateUserResponse = zod.object({
   "userType": zod.enum(['customer', 'helper', 'admin']),
   "area": zod.string().nullish(),
   "rating": zod.number().nullish(),
+  "ratingCount": zod.number().min(updateUserResponseRatingCountMin).optional().describe('Count calculated from helper_ratings; not a client-maintained counter.'),
   "isActive": zod.boolean(),
   "isVerified": zod.boolean().optional(),
   "isBlocked": zod.boolean().optional(),
+  "deletedAt": zod.coerce.date().nullish(),
   "lastLogin": zod.string().nullish(),
   "otpCode": zod.string().nullish(),
   "otpCreatedAt": zod.string().nullish(),
+  "helperWelcomeMessageSentAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "helperInterests": zod.string().nullish(),
-  "preferredAreas": zod.string().nullish()
+  "preferredAreas": zod.string().nullish(),
+  "serviceAreas": zod.array(zod.string()).optional()
 })
 
 
@@ -432,6 +666,202 @@ export const GetAdminStatsResponse = zod.object({
 
 
 /**
+ * @summary Aggregate administrator dashboard metrics
+ */
+export const GetAdminStatisticsQueryParams = zod.object({
+  "period": zod.enum(['7d', '30d', 'month', 'all']).optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "area": zod.array(zod.coerce.string()).optional(),
+  "category": zod.coerce.string().optional()
+})
+
+export const GetAdminStatisticsResponse = zod.record(zod.string(), zod.unknown()).describe('Zero-safe aggregate metrics; no personal data is included.')
+
+
+/**
+ * @summary List active requests for administrators
+ */
+
+export const listAdminActiveRequestsQueryPageSizeMax = 100;
+
+
+
+export const ListAdminActiveRequestsQueryParams = zod.object({
+  "area": zod.array(zod.coerce.string()).optional(),
+  "category": zod.coerce.string().optional(),
+  "search": zod.coerce.string().optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "page": zod.coerce.number().min(1).optional(),
+  "pageSize": zod.coerce.number().min(1).max(listAdminActiveRequestsQueryPageSizeMax).optional()
+})
+
+export const ListAdminActiveRequestsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "helperId": zod.number().nullish(),
+  "category": zod.enum(['transport', 'delivery', 'government', 'shopping', 'home_services', 'labor']),
+  "details": zod.string(),
+  "area": zod.string(),
+  "timeType": zod.enum(['now', 'scheduled']),
+  "scheduledDateTime": zod.string().nullish(),
+  "offeredAmount": zod.number(),
+  "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "customerName": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "helperName": zod.string().nullish(),
+  "helperPhone": zod.string().nullish()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "activeCount": zod.number()
+})
+
+
+/**
+ * @summary List completed requests for administrators
+ */
+
+export const listAdminArchiveRequestsQueryPageSizeMax = 100;
+
+
+
+export const ListAdminArchiveRequestsQueryParams = zod.object({
+  "area": zod.array(zod.coerce.string()).optional(),
+  "result": zod.enum(['helped', 'not_helped', 'all']).optional(),
+  "category": zod.coerce.string().optional(),
+  "search": zod.coerce.string().optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "page": zod.coerce.number().min(1).optional(),
+  "pageSize": zod.coerce.number().min(1).max(listAdminArchiveRequestsQueryPageSizeMax).optional()
+})
+
+export const ListAdminArchiveRequestsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "helperId": zod.number().nullish(),
+  "category": zod.enum(['transport', 'delivery', 'government', 'shopping', 'home_services', 'labor']),
+  "details": zod.string(),
+  "area": zod.string(),
+  "timeType": zod.enum(['now', 'scheduled']),
+  "scheduledDateTime": zod.string().nullish(),
+  "offeredAmount": zod.number(),
+  "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "customerName": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "helperName": zod.string().nullish(),
+  "helperPhone": zod.string().nullish()
+})),
+  "total": zod.number(),
+  "helpedCount": zod.number(),
+  "notHelpedCount": zod.number(),
+  "archiveCount": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary List archived help requests
+ */
+export const ListDeletedRequestsResponseItem = zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "helperId": zod.number().nullish(),
+  "category": zod.enum(['transport', 'delivery', 'government', 'shopping', 'home_services', 'labor']),
+  "details": zod.string(),
+  "area": zod.string(),
+  "timeType": zod.enum(['now', 'scheduled']),
+  "scheduledDateTime": zod.string().nullish(),
+  "offeredAmount": zod.number(),
+  "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "customerName": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "helperName": zod.string().nullish(),
+  "helperPhone": zod.string().nullish()
+})
+export const ListDeletedRequestsResponse = zod.array(ListDeletedRequestsResponseItem)
+
+
+/**
+ * @summary List request lifecycle audit history
+ */
+export const ListRequestLifecycleEventsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListRequestLifecycleEventsResponseItem = zod.object({
+  "id": zod.number(),
+  "requestId": zod.number(),
+  "action": zod.enum(['created', 'updated', 'accepted', 'status_changed', 'completed', 'help_result_changed', 'cancelled', 'soft_deleted', 'restored']),
+  "actorUserId": zod.number().nullish(),
+  "actorRole": zod.string().nullish(),
+  "reason": zod.string().nullish(),
+  "metadata": zod.record(zod.string(), zod.union([zod.string(),zod.number(),zod.boolean()]).nullable()).nullish(),
+  "createdAt": zod.string()
+})
+export const ListRequestLifecycleEventsResponse = zod.array(ListRequestLifecycleEventsResponseItem)
+
+
+/**
+ * @summary Restore an archived help request
+ */
+export const RestoreRequestParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RestoreRequestResponse = zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "helperId": zod.number().nullish(),
+  "category": zod.enum(['transport', 'delivery', 'government', 'shopping', 'home_services', 'labor']),
+  "details": zod.string(),
+  "area": zod.string(),
+  "timeType": zod.enum(['now', 'scheduled']),
+  "scheduledDateTime": zod.string().nullish(),
+  "offeredAmount": zod.number(),
+  "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
+  "helpCompleted": zod.boolean().nullish(),
+  "completedHelperId": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "deletedAt": zod.string().nullish(),
+  "deletedByUserId": zod.number().nullish(),
+  "deletedReason": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "customerName": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "helperName": zod.string().nullish(),
+  "helperPhone": zod.string().nullish()
+})
+
+
+/**
  * @summary Approve or block a helper
  */
 export const VerifyHelperParams = zod.object({
@@ -442,6 +872,10 @@ export const VerifyHelperBody = zod.object({
   "action": zod.enum(['verify', 'block'])
 })
 
+export const verifyHelperResponseRatingCountMin = 0;
+
+
+
 export const VerifyHelperResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -449,23 +883,35 @@ export const VerifyHelperResponse = zod.object({
   "userType": zod.enum(['customer', 'helper', 'admin']),
   "area": zod.string().nullish(),
   "rating": zod.number().nullish(),
+  "ratingCount": zod.number().min(verifyHelperResponseRatingCountMin).optional().describe('Count calculated from helper_ratings; not a client-maintained counter.'),
   "isActive": zod.boolean(),
   "isVerified": zod.boolean().optional(),
   "isBlocked": zod.boolean().optional(),
+  "deletedAt": zod.coerce.date().nullish(),
   "lastLogin": zod.string().nullish(),
   "otpCode": zod.string().nullish(),
   "otpCreatedAt": zod.string().nullish(),
+  "helperWelcomeMessageSentAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "helperInterests": zod.string().nullish(),
-  "preferredAreas": zod.string().nullish()
+  "preferredAreas": zod.string().nullish(),
+  "serviceAreas": zod.array(zod.string()).optional()
 })
 
 
 /**
- * @summary Delete a user (admin)
+ * @summary Delete or anonymize a user without changing historical records
  */
 export const DeleteUserParams = zod.object({
   "id": zod.coerce.number()
+})
+
+export const DeleteUserBody = zod.object({
+  "confirmation": zod.enum(['حذف'])
+})
+
+export const DeleteUserResponse = zod.object({
+  "deletionMode": zod.enum(['permanent', 'anonymized'])
 })
 
 
