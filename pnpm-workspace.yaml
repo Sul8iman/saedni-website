@@ -75,6 +75,11 @@ onlyBuiltDependencies:
   - msw
   - unrs-resolver
 
+packageExtensions:
+  '@hookform/resolvers@3.10.0':
+    peerDependencies:
+      zod: ^3.25.0
+
 overrides:
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
