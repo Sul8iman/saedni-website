@@ -10,6 +10,8 @@ export interface HelpRequestUpdate {
   category?: string;
   details?: string;
   area?: string;
+  fromArea?: string | null;
+  toArea?: string | null;
   timeType?: string;
   scheduledDateTime?: string;
   offeredAmount?: number;

@@ -1,0 +1,7 @@
+BEGIN;
+
+ALTER TABLE requests
+  ADD COLUMN IF NOT EXISTS from_area text,
+  ADD COLUMN IF NOT EXISTS to_area text;
+
+COMMIT;

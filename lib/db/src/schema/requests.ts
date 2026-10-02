@@ -10,6 +10,8 @@ export const requestsTable = pgTable("requests", {
   category: text("category").notNull(),
   details: text("details").notNull(),
   area: text("area").notNull(),
+  fromArea: text("from_area"),
+  toArea: text("to_area"),
   timeType: text("time_type").notNull().default("now"),
   scheduledDateTime: text("scheduled_date_time"),
   offeredAmount: real("offered_amount").notNull(),

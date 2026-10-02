@@ -155,6 +155,8 @@ export interface HelpRequest {
   category: HelpRequestCategory;
   details: string;
   area: string;
+  fromArea: string | null;
+  toArea: string | null;
   timeType: HelpRequestTimeType;
   /** @nullable */
   scheduledDateTime?: string | null;
@@ -209,7 +211,9 @@ export interface HelpRequestInput {
   customerId: number;
   category: HelpRequestInputCategory;
   details: string;
-  area: string;
+  area?: string;
+  fromArea?: string;
+  toArea?: string;
   timeType: HelpRequestInputTimeType;
   scheduledDateTime?: string;
   offeredAmount: number;
@@ -219,6 +223,8 @@ export interface HelpRequestUpdate {
   category?: string;
   details?: string;
   area?: string;
+  fromArea?: string | null;
+  toArea?: string | null;
   timeType?: string;
   scheduledDateTime?: string;
   offeredAmount?: number;

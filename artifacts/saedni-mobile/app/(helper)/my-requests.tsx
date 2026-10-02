@@ -10,11 +10,13 @@ import { useColors } from "@/hooks/useColors";
 import { getAuthHeaders, useAuth } from "@/contexts/AuthContext";
 import { CATEGORIES, STATUS_INFO } from "@/constants/categories";
 import { requestQueryKeys } from "@/lib/request-query-keys";
+import { getRequestLocationLines } from "@/lib/request-locations";
 
 const BASE = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
 
 interface HelpRequest {
   id: number; category: string; details: string; area: string;
+  fromArea?: string | null; toArea?: string | null;
   timeType: string; offeredAmount: number; status: string;
   customerName?: string | null; customerPhone?: string | null;
 }
@@ -66,10 +68,12 @@ export default function HelperMyRequestsScreen() {
           </View>
         )}
         <View style={s.metaRow}>
-          <View style={s.metaChip}>
-            <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
-            <Text style={s.metaTxt}>{item.area}</Text>
-          </View>
+          {getRequestLocationLines(item).map((location) => (
+            <View style={s.metaChip} key={location.label}>
+              <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
+              <Text style={s.metaTxt}>{location.label}: {location.value}</Text>
+            </View>
+          ))}
           <View style={[s.metaChip, { backgroundColor: colors.secondary }]}>
             <Ionicons name="cash-outline" size={13} color={colors.primary} />
             <Text style={[s.metaTxt, { color: colors.primary, fontWeight: "700" }]}>{item.offeredAmount} ر.ع.</Text>

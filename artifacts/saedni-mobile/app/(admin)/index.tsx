@@ -26,6 +26,7 @@ import {
   useRestoreRequest,
 } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
+import { getRequestLocationLines } from "@/lib/request-locations";
 import { getAuthHeaders, useAuth } from "@/contexts/AuthContext";
 import { useAdminPushRegistration } from "@/hooks/usePushNotifications";
 import { CATEGORIES, STATUS_INFO, AREAS } from "@/constants/categories";
@@ -45,6 +46,8 @@ interface RequestItem {
   category: string;
   details: string;
   area: string;
+  fromArea?: string | null;
+  toArea?: string | null;
   timeType: string;
   scheduledDateTime?: string | null;
   offeredAmount: number;
@@ -346,7 +349,13 @@ export default function AdminDashboard() {
           <Text style={[styles.amount, { color: colors.primary }]}>{Number(item.offeredAmount).toFixed(3)} ر.ع.</Text>
           <View style={styles.metaItem}>
             <Ionicons name="location-outline" size={14} color={colors.mutedForeground} />
-            <Text style={[styles.meta, { color: colors.foreground }]}>{item.area}</Text>
+            <View style={styles.locationValues}>
+              {getRequestLocationLines(item).map((location) => (
+                <Text key={location.label} style={[styles.meta, { color: colors.foreground }]}>
+                  {location.label}: {location.value}
+                </Text>
+              ))}
+            </View>
           </View>
         </View>
         <View style={styles.metaRow}>
@@ -397,7 +406,9 @@ export default function AdminDashboard() {
           </View>
         </View>
         <View style={styles.archiveMeta}>
-          <Text style={[styles.archiveMetaText, { color: colors.foreground }]}>{item.area}</Text>
+          <Text style={[styles.archiveMetaText, { color: colors.foreground }]}>
+            {getRequestLocationLines(item).map((location) => `${location.label}: ${location.value}`).join(" · ")}
+          </Text>
           <Text style={[styles.archiveMetaText, { color: colors.mutedForeground }]}>{item.customerName ?? "عميل غير معروف"}</Text>
           <Text style={[styles.archiveMetaText, { color: colors.primary }]}>{Number(item.offeredAmount).toFixed(3)} ر.ع.</Text>
         </View>
@@ -428,7 +439,9 @@ export default function AdminDashboard() {
         </View>
       </View>
       <View style={styles.archiveMeta}>
-        <Text style={[styles.archiveMetaText, { color: colors.foreground }]}>{item.area}</Text>
+        <Text style={[styles.archiveMetaText, { color: colors.foreground }]}>
+          {getRequestLocationLines(item).map((location) => `${location.label}: ${location.value}`).join(" · ")}
+        </Text>
         <Text style={[styles.archiveMetaText, { color: colors.mutedForeground }]}>حُذف في {fmtDate(item.deletedAt)}</Text>
       </View>
       <View style={styles.actionRow}>
@@ -805,6 +818,7 @@ const styles = StyleSheet.create({
   amountRow: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "space-between", marginTop: 12 },
   amount: { fontSize: 15, fontWeight: "800" },
   metaItem: { flexDirection: "row-reverse", alignItems: "center", gap: 4 },
+  locationValues: { alignItems: "flex-end", flexShrink: 1 },
   metaRow: { flexDirection: "row-reverse", justifyContent: "space-between", gap: 10, marginTop: 8 },
   meta: { fontSize: 12, textAlign: "right" },
   requestDetailsToggle: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "space-between", minHeight: 40, borderTopWidth: StyleSheet.hairlineWidth, marginTop: 11, paddingTop: 8, paddingHorizontal: 2 },

@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
 import { getAuthHeaders } from "@/contexts/AuthContext";
 import { CATEGORIES, STATUS_INFO } from "@/constants/categories";
+import { getRequestLocationLines } from "@/lib/request-locations";
 
 const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? "saedni.onrender.com"}`;
 
@@ -38,6 +39,8 @@ interface HelpRequest {
   category: string;
   details: string;
   area: string;
+  fromArea?: string | null;
+  toArea?: string | null;
   timeType: string;
   scheduledDateTime?: string | null;
   offeredAmount: number;
@@ -622,10 +625,13 @@ function RequestCard({
       <Text style={s.details} numberOfLines={2}>{req.details}</Text>
 
       {/* Meta rows */}
+      {getRequestLocationLines(req).map((location) => (
+        <View style={s.metaRow} key={location.label}>
+          <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
+          <Text style={s.metaTxt}>{location.label}: {location.value}</Text>
+        </View>
+      ))}
       <View style={s.metaRow}>
-        <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
-        <Text style={s.metaTxt}>{req.area}</Text>
-        <View style={s.dot} />
         <Ionicons name={req.timeType === "now" ? "flash" : "calendar-outline"} size={13} color={colors.mutedForeground} />
         <Text style={s.metaTxt}>{fmtTime()}</Text>
       </View>

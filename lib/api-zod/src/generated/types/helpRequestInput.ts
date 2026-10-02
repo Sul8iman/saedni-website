@@ -12,7 +12,9 @@ export interface HelpRequestInput {
   customerId: number;
   category: HelpRequestInputCategory;
   details: string;
-  area: string;
+  area?: string;
+  fromArea?: string;
+  toArea?: string;
   timeType: HelpRequestInputTimeType;
   scheduledDateTime?: string;
   offeredAmount: number;
