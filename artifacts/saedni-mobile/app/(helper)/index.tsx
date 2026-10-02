@@ -12,6 +12,7 @@ import { getAuthHeaders, useAuth } from "@/contexts/AuthContext";
 import { CATEGORIES, AREAS } from "@/constants/categories";
 import { useHelperPushRegistration } from "@/hooks/usePushNotifications";
 import { requestQueryKeys } from "@/lib/request-query-keys";
+import { getRequestLocationLines } from "@/lib/request-locations";
 
 const BASE = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
 
@@ -20,6 +21,8 @@ interface HelpRequest {
   category: string;
   details: string;
   area: string;
+  fromArea?: string | null;
+  toArea?: string | null;
   timeType: string;
   scheduledDateTime?: string | null;
   offeredAmount: number;
@@ -182,10 +185,12 @@ export default function HelperRequestsScreen() {
 
       {/* Meta chips: location + time */}
       <View style={s.metaRow}>
-        <View style={s.metaChip}>
-          <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
-          <Text style={s.metaTxt}>{item.area}</Text>
-        </View>
+        {getRequestLocationLines(item).map((location) => (
+          <View style={s.metaChip} key={location.label}>
+            <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
+            <Text style={s.metaTxt}>{location.label}: {location.value}</Text>
+          </View>
+        ))}
         <View style={s.metaChip}>
           <Ionicons
             name={item.timeType === "now" ? "flash" : "calendar-outline"}

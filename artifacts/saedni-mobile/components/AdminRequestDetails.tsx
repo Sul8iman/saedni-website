@@ -4,7 +4,6 @@ import {
   useListContactedHelpers,
   useListRequests,
   type ContactedHelper,
-  type HelpRequest,
 } from "@workspace/api-client-react";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -16,20 +15,21 @@ import {
   View,
 } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { getRequestLocationLines } from "@/lib/request-locations";
 
-type AdminRequestDetailsRequest = Omit<
-  Pick<
-    HelpRequest,
-    | "id"
-    | "customerId"
-    | "status"
-    | "completedHelperId"
-    | "completedHelperTaskRatingStars"
-    | "helperName"
-    | "helperPhone"
-  >,
-  "status"
-> & { status: string };
+type AdminRequestDetailsRequest = {
+  id: number;
+  customerId: number;
+  category: string;
+  area: string;
+  fromArea?: string | null;
+  toArea?: string | null;
+  status: string;
+  completedHelperId?: number | null;
+  completedHelperTaskRatingStars?: number | null;
+  helperName?: string | null;
+  helperPhone?: string | null;
+};
 
 export function AdminRequestDetails({
   request,
@@ -82,6 +82,19 @@ export function AdminRequestDetails({
       testID={`admin-request-details-${request.id}`}
     >
       <View style={styles.sectionContent}>
+        <View
+          style={styles.locationList}
+          testID={`admin-request-locations-${request.id}`}
+        >
+          {getRequestLocationLines(request).map((location) => (
+            <View style={styles.locationRow} key={location.label}>
+              <Ionicons name="location-outline" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.locationText, { color: colors.foreground }]}>
+                {location.label}: {location.value}
+              </Text>
+            </View>
+          ))}
+        </View>
         <View style={styles.sectionHeading}>
           <Ionicons name="people-outline" size={17} color={colors.primary} />
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
@@ -340,6 +353,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionContent: { gap: 10 },
+  locationList: { gap: 5 },
+  locationRow: { flexDirection: "row-reverse", alignItems: "center", gap: 6 },
+  locationText: { fontSize: 12, fontWeight: "600", textAlign: "right" },
   sectionHeading: {
     flexDirection: "row-reverse",
     alignItems: "center",

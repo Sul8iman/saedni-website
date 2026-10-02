@@ -40,7 +40,8 @@ import {
   presentRequestLifecycleEvent,
 } from "../lib/request-lifecycle";
 import { decideRequestPermission, type RequestPermissionDecision } from "../lib/request-security";
-import { helperServesArea, isActiveServiceArea, parsePreferredAreas } from "../lib/service-areas";
+import { helperServesArea } from "../lib/service-areas";
+import { normalizeNewRequestLocation } from "../lib/request-locations";
 
 const router: IRouter = Router();
 
@@ -199,6 +200,12 @@ function requestContentUnchangedConditions(request: typeof requestsTable.$inferS
       ? isNull(requestsTable.scheduledDateTime)
       : eq(requestsTable.scheduledDateTime, request.scheduledDateTime),
     eq(requestsTable.area, request.area),
+    request.fromArea === null
+      ? isNull(requestsTable.fromArea)
+      : eq(requestsTable.fromArea, request.fromArea),
+    request.toArea === null
+      ? isNull(requestsTable.toArea)
+      : eq(requestsTable.toArea, request.toArea),
     eq(requestsTable.offeredAmount, request.offeredAmount),
   ];
 }
@@ -265,7 +272,9 @@ router.get("/requests", async (req, res): Promise<void> => {
       .select({ preferredAreas: usersTable.preferredAreas })
       .from(usersTable)
       .where(eq(usersTable.id, actor.id));
-    actorVisibleRows = rows.filter((row) => helperServesArea(helper?.preferredAreas, row.area));
+    actorVisibleRows = rows.filter((row) =>
+      helperServesArea(helper?.preferredAreas, row.fromArea ?? row.area),
+    );
   }
 
   const enrichedRequests = await Promise.all(
@@ -324,8 +333,14 @@ router.post("/requests", async (req, res): Promise<void> => {
   const actor = await requireRequestActor(req, res);
   if (!actor) return;
 
-  if (!isActiveServiceArea(parsed.data.area)) {
-    res.status(400).json({ error: "المنطقة غير متاحة للاختيار الجديد" });
+  const location = normalizeNewRequestLocation(parsed.data);
+  if (!location.success) {
+    const error = location.field === "fromArea"
+      ? "اختر منطقة انطلاق نشطة"
+      : location.field === "toArea"
+        ? "اختر منطقة وصول نشطة"
+        : "المنطقة غير متاحة للاختيار الجديد";
+    res.status(400).json({ error });
     return;
   }
 
@@ -356,7 +371,7 @@ router.post("/requests", async (req, res): Promise<void> => {
   const row = await db.transaction(async (tx) => {
     const [created] = await tx
       .insert(requestsTable)
-      .values({ ...parsed.data, status: "available" })
+      .values({ ...parsed.data, ...location.data, status: "available" })
       .returning();
     await tx.insert(requestLifecycleEventsTable).values(buildRequestLifecycleEventValues({
       requestId: created.id,
@@ -429,14 +444,37 @@ router.patch("/requests/:id", async (req, res): Promise<void> => {
   }
   if (!enforceRequestPermission(res, decideRequestPermission({ action: "edit", actor, request: existing }))) return;
 
-  const { status: attemptedStatusChange, ...updates } = parsed.data;
+  const { status: attemptedStatusChange, ...parsedUpdates } = parsed.data;
   if (attemptedStatusChange !== undefined) {
     res.status(400).json({ error: "استخدم إجراء حالة الطلب المخصص" });
     return;
   }
-  if (Object.keys(updates).length === 0) {
+  if (Object.keys(parsedUpdates).length === 0) {
     res.json(await enrichRequest(existing));
     return;
+  }
+
+  const locationWasUpdated = ["category", "area", "fromArea", "toArea"]
+    .some((key) => Object.prototype.hasOwnProperty.call(parsedUpdates, key));
+  let updates = parsedUpdates;
+  if (locationWasUpdated) {
+    const location = normalizeNewRequestLocation({
+      category: parsedUpdates.category ?? existing.category,
+      area: parsedUpdates.area ?? existing.area,
+      fromArea: parsedUpdates.fromArea === undefined ? existing.fromArea : parsedUpdates.fromArea,
+      toArea: parsedUpdates.toArea === undefined ? existing.toArea : parsedUpdates.toArea,
+    });
+    if (!location.success) {
+      const error = location.field === "fromArea"
+        ? "اختر منطقة انطلاق نشطة"
+        : location.field === "toArea"
+          ? "اختر منطقة وصول نشطة"
+          : "المنطقة غير متاحة للاختيار الجديد";
+      res.status(400).json({ error });
+      return;
+    }
+    const { area: _area, fromArea: _fromArea, toArea: _toArea, ...otherUpdates } = parsedUpdates;
+    updates = { ...otherUpdates, ...location.data };
   }
 
   const row = await db.transaction(async (tx) => {
