@@ -225,6 +225,7 @@ export const ListRequestsResponseItem = zod.object({
   "status": zod.enum(['available', 'accepted', 'in_progress', 'completed', 'cancelled']),
   "helpCompleted": zod.boolean().nullish(),
   "completedHelperId": zod.number().nullish(),
+  "completedHelperTaskRatingStars": zod.number().min(1).max(5).nullish().describe('Per-request star rating for completedHelperId; included only in administrator request-list responses.'),
   "completedAt": zod.string().nullish(),
   "deletedAt": zod.string().nullish(),
   "deletedByUserId": zod.number().nullish(),

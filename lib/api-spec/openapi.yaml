@@ -963,6 +963,11 @@ components:
           type: ["boolean", "null"]
         completedHelperId:
           type: ["integer", "null"]
+        completedHelperTaskRatingStars:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 5
+          description: Per-request star rating for completedHelperId; included only in administrator request-list responses.
         completedAt:
           type: ["string", "null"]
         deletedAt:

@@ -268,11 +268,50 @@ router.get("/requests", async (req, res): Promise<void> => {
     actorVisibleRows = rows.filter((row) => helperServesArea(helper?.preferredAreas, row.area));
   }
 
-  res.json(await Promise.all(actorVisibleRows.map((row) =>
-    enrichRequest(row, {
-      includeContact: isAdminActor(actor) || row.customerId === actor.id || row.helperId === actor.id,
+  const enrichedRequests = await Promise.all(
+    actorVisibleRows.map((row) =>
+      enrichRequest(row, {
+        includeContact:
+          isAdminActor(actor) || row.customerId === actor.id || row.helperId === actor.id,
+      }),
+    ),
+  );
+  if (!isAdminActor(actor)) {
+    res.json(enrichedRequests);
+    return;
+  }
+
+  const completedRequestIds = actorVisibleRows
+    .filter((row) => row.completedHelperId !== null)
+    .map((row) => row.id);
+  const completionRatingRows =
+    completedRequestIds.length > 0
+      ? await db
+          .select({
+            requestId: helperRatingsTable.requestId,
+            helperId: helperRatingsTable.helperId,
+            stars: helperRatingsTable.stars,
+          })
+          .from(helperRatingsTable)
+          .where(inArray(helperRatingsTable.requestId, completedRequestIds))
+      : [];
+  const completionRatingsByRequest = new Map(
+    completionRatingRows.map((rating) => [rating.requestId, rating]),
+  );
+
+  res.json(
+    enrichedRequests.map((request) => {
+      const selectedHelperId = request.completedHelperId ?? null;
+      const recordedRating = completionRatingsByRequest.get(request.id);
+      return {
+        ...request,
+        completedHelperTaskRatingStars:
+          selectedHelperId !== null && recordedRating?.helperId === selectedHelperId
+            ? recordedRating.stars
+            : null,
+      };
     }),
-  )));
+  );
 });
 
 router.post("/requests", async (req, res): Promise<void> => {

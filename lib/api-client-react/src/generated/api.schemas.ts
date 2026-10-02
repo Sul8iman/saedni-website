@@ -165,6 +165,8 @@ export interface HelpRequest {
   /** @nullable */
   completedHelperId?: number | null;
   /** @nullable */
+  completedHelperTaskRatingStars?: number | null;
+  /** @nullable */
   completedAt?: string | null;
   /** @nullable */
   deletedAt?: string | null;
