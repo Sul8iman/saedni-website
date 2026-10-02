@@ -97,6 +97,19 @@ test("normal request and account-deactivation routes do not hard-delete request 
   assert.match(adminSource, /account_deactivated/);
 });
 
+test("only administrators receive the selected completion helper's task-specific rating", async () => {
+  const source = await readFile(new URL("../routes/requests.ts", import.meta.url), "utf8");
+  const listStart = source.indexOf('router.get("/requests"');
+  const listEnd = source.indexOf('router.post("/requests"', listStart);
+  assert.ok(listStart >= 0 && listEnd > listStart);
+  const listRoute = source.slice(listStart, listEnd);
+
+  assert.match(listRoute, /if \(!isAdminActor\(actor\)\)\s*\{\s*res\.json\(enrichedRequests\);/);
+  assert.match(listRoute, /\.where\(inArray\(helperRatingsTable\.requestId, completedRequestIds\)\)/);
+  assert.match(listRoute, /recordedRating\?\.helperId === selectedHelperId/);
+  assert.match(listRoute, /completedHelperTaskRatingStars:/);
+});
+
 test("audit metadata strips authentication secrets and OTPs", () => {
   assert.deepEqual(
     sanitizeLifecycleMetadata({

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Users, ClipboardList, CheckCircle, Activity, Phone, MapPin, Clock, Banknote, User, Calendar, CheckCheck, Trash2 } from "lucide-react";
+import { Users, ClipboardList, CheckCircle, Activity, Phone, MapPin, Clock, Banknote, User, Calendar, CheckCheck, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import {
   useGetAdminStats,
   getGetAdminStatsQueryKey,
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { AdminRequestDetails } from "@/components/AdminRequestDetails";
 
 // Admin-only status labels
 const ADMIN_STATUS: Record<string, { label: string; color: string }> = {
@@ -55,6 +56,7 @@ export default function Admin() {
   const deleteMutation = useDeleteRequest();
 
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [expandedRequestId, setExpandedRequestId] = useState<number | null>(null);
 
   // End a request — admin sets status to completed
   const handleEnd = (id: number) => {
@@ -147,6 +149,7 @@ export default function Admin() {
               const cat      = CATEGORY_MAP[req.category] ?? { label: req.category, icon: "HelpCircle" };
               const status   = ADMIN_STATUS[req.status]   ?? { label: req.status, color: "bg-gray-100 text-gray-700" };
               const isActive = req.status !== "completed" && req.status !== "cancelled";
+              const isExpanded = expandedRequestId === req.id;
 
               return (
                 <div
@@ -207,6 +210,31 @@ export default function Admin() {
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  <div className="border-t border-border/70 px-4 py-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-10 w-full justify-between rounded-xl px-2 text-sm text-primary hover:bg-primary/5"
+                      aria-expanded={isExpanded}
+                      aria-controls={`admin-request-details-${req.id}`}
+                      onClick={() => setExpandedRequestId(isExpanded ? null : req.id)}
+                      data-testid={`toggle-request-details-${req.id}`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Users className="h-4 w-4" aria-hidden="true" />
+                        {isExpanded ? "إخفاء تفاصيل المساعدين" : "عرض تفاصيل المساعدين"}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                      )}
+                    </Button>
+                  </div>
+                  <div id={`admin-request-details-${req.id}`} hidden={!isExpanded}>
+                    {isExpanded && <AdminRequestDetails request={req} />}
                   </div>
 
                   {/* Action buttons */}
