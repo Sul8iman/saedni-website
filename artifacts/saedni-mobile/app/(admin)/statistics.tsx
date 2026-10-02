@@ -6,8 +6,10 @@ import { useGetAdminStatistics } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { CATEGORIES, AREAS } from "@/constants/categories";
 import AdminAreaFilter from "@/components/AdminAreaFilter";
-
-type Period = "7d" | "30d" | "month" | "all";
+import AdminDateRangeFilter, {
+  type AdminArchivePeriod,
+  type AdminDateRange,
+} from "@/components/AdminDateRangeFilter";
 
 interface BreakdownRow {
   area?: string;
@@ -85,6 +87,17 @@ const EMPTY_STATS: AdminStatistics = {
   consistency: { cancelledWithCompletionData: 0, completedWithoutCompletedAt: 0, legacyMismatches: 0 },
 };
 
+function periodStart(period: "7d" | "30d" | "month"): Date {
+  const start = new Date();
+  if (period === "7d") start.setDate(start.getDate() - 7);
+  else if (period === "30d") start.setDate(start.getDate() - 30);
+  else {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+  }
+  return start;
+}
+
 function number(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : Number(value ?? 0) || 0;
 }
@@ -130,12 +143,29 @@ function MetricCard({
 export default function AdminStatisticsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [period, setPeriod] = useState<Period>("30d");
+  const [period, setPeriod] = useState<AdminArchivePeriod>("30d");
+  const [appliedPeriod, setAppliedPeriod] = useState<AdminArchivePeriod>("30d");
+  const [appliedCustomDateRange, setAppliedCustomDateRange] = useState<AdminDateRange | null>(null);
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [category, setCategory] = useState("");
+  const from = useMemo(() => {
+    if (appliedPeriod === "custom") return appliedCustomDateRange?.from.toISOString();
+    if (appliedPeriod === "all") return undefined;
+    return periodStart(appliedPeriod).toISOString();
+  }, [appliedPeriod, appliedCustomDateRange]);
+  const to = useMemo(
+    () => appliedPeriod === "custom" ? appliedCustomDateRange?.to.toISOString() : undefined,
+    [appliedPeriod, appliedCustomDateRange],
+  );
   const params = useMemo(
-    () => ({ period, ...(selectedAreas.length > 0 ? { area: selectedAreas } : {}), ...(category ? { category } : {}) }),
-    [period, selectedAreas, category],
+    () => ({
+      period: appliedPeriod === "custom" ? "all" : appliedPeriod,
+      ...(from ? { from } : {}),
+      ...(to ? { to } : {}),
+      ...(selectedAreas.length > 0 ? { area: selectedAreas } : {}),
+      ...(category ? { category } : {}),
+    }),
+    [appliedPeriod, from, to, selectedAreas, category],
   );
   const { data, isLoading, isFetching, isError, refetch } = useGetAdminStatistics<AdminStatistics>(params);
   const stats = data ?? EMPTY_STATS;
@@ -162,26 +192,17 @@ export default function AdminStatisticsScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 36 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.periodRow}>
-          {([
-            ["7d", "آخر 7 أيام"],
-            ["30d", "آخر 30 يوماً"],
-            ["month", "هذا الشهر"],
-            ["all", "كل الوقت"],
-          ] as [Period, string][]).map(([key, label]) => (
-            <Text
-              key={key}
-              onPress={() => setPeriod(key)}
-              style={[
-                styles.periodChip,
-                { backgroundColor: colors.muted, borderColor: colors.border, color: colors.mutedForeground },
-                period === key && { backgroundColor: colors.primary, borderColor: colors.primary, color: colors.primaryForeground },
-              ]}
-            >
-              {label}
-            </Text>
-          ))}
-        </View>
+        <AdminDateRangeFilter
+          value={period}
+          onChange={(value) => {
+            setPeriod(value);
+            if (value !== "custom") setAppliedPeriod(value);
+          }}
+          onApplyRange={(range) => {
+            setAppliedCustomDateRange(range);
+            setAppliedPeriod("custom");
+          }}
+        />
         <CategorySelector value={category} onChange={setCategory} colors={colors} />
         <AdminAreaFilter areas={AREAS} selectedAreas={selectedAreas} onChange={setSelectedAreas} />
 
@@ -373,8 +394,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, fontWeight: "800" },
   headerSubtitle: { fontSize: 12, marginTop: 3, textAlign: "right" },
   content: { padding: 16 },
-  periodRow: { flexDirection: "row-reverse", flexWrap: "wrap", gap: 7, marginBottom: 16 },
-  periodChip: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 11, paddingVertical: 8, fontSize: 12, fontWeight: "700" },
   categoryFilter: { gap: 7, marginBottom: 14 },
   filterLabel: { fontSize: 12, fontWeight: "800", textAlign: "right" },
   categoryRow: { flexDirection: "row-reverse", gap: 7 },
