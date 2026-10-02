@@ -201,7 +201,16 @@ async function downloadFile(url, outputPath) {
     const response = await fetch(url, { signal: controller.signal });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      const responseBody = await response.text();
+      const contentType = response.headers.get("content-type");
+      const details = [
+        `HTTP ${response.status} ${response.statusText}`.trim(),
+        contentType ? `Content-Type: ${contentType}` : null,
+        responseBody ? `Response body:\n${responseBody}` : "Response body: <empty>",
+      ]
+        .filter(Boolean)
+        .join("\n");
+      throw new Error(details);
     }
 
     const file = fs.createWriteStream(outputPath);
